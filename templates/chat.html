@@ -36,25 +36,92 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 @keyframes orb2{from{transform:translate(0,0)}to{transform:translate(-40px,-60px)}}
 .app{display:flex;height:100vh;position:relative;z-index:1}
 
-/* ════ MOBILE ════ */
-@media(max-width:640px){
-    .app{flex-direction:column}
-    .sidebar{width:100%;height:100vh;flex-shrink:0;display:flex;flex-direction:column;transition:transform .3s ease}
-    .sidebar.hidden{display:none}
-    .chat{display:none;flex-direction:column;height:100vh}
-    .chat.active{display:flex}
-    .back-btn{display:flex!important}
-    .ai-fab{bottom:14px;left:14px;width:44px;height:44px;font-size:20px}
-    .ai-win{left:10px;right:10px;width:auto;bottom:70px}
-    .bubble{max-width:88%}
-    .inp-bar input{font-size:16px}
+/* ════ BACK BTN (desktop hidden) ════ */
+.ai-drag-handle{padding:8px 0 4px;cursor:pointer;display:none}
+@media(max-width:680px){.ai-drag-handle{display:block}}
+.back-btn{display:none;background:none;border:none;color:var(--txt);font-size:1.3em;cursor:pointer;padding:4px 6px;line-height:1;flex-shrink:0}
+
+/* ════ MOBILE — Telegram style ════ */
+@media(max-width:680px){
+    /* Orbs off on mobile — perf */
+    body::before,body::after{display:none}
+
+    html,body{height:100%;height:-webkit-fill-available;overflow:hidden}
+
+    .app{flex-direction:row;height:100vh;height:-webkit-fill-available}
+
+    /* Sidebar takes full screen, slides out */
+    .sidebar{
+        position:fixed;inset:0;z-index:100;
+        width:100%;height:100%;height:-webkit-fill-available;
+        transform:translateX(0);
+        transition:transform .28s cubic-bezier(.4,0,.2,1);
+        border-right:none;
+    }
+    .sidebar.hidden{transform:translateX(-100%)}
+
+    /* Chat takes full screen */
+    .chat{
+        position:fixed;inset:0;z-index:99;
+        width:100%;height:100%;height:-webkit-fill-available;
+        display:flex;flex-direction:column;
+        transform:translateX(100%);
+        transition:transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    .chat.active{transform:translateX(0)}
+
+    /* Back button visible */
+    .back-btn{display:flex!important;align-items:center}
+
+    /* Chat header — tighter */
+    .chat-head{padding:8px 12px;gap:8px}
+    .ch-av{width:34px;height:34px;border-radius:50%;font-size:17px}
+    #ch-title{font-size:.92em}
+    #ch-sub{font-size:.68em}
+    .e2ee-badge{font-size:.65em;padding:2px 7px}
+
+    /* Messages */
+    #messages{padding:12px 10px;gap:4px}
+    .bubble{max-width:82%;font-size:.9em;padding:8px 11px;border-radius:16px}
+    .bubble.mine{border-bottom-right-radius:4px}
+    .bubble.theirs{border-bottom-left-radius:4px}
+
+    /* Input bar — bigger touch targets */
+    .inp-bar{padding:8px 10px;gap:6px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+    .inp-bar input{font-size:16px;padding:10px 12px;border-radius:22px}
+    .send-btn{width:40px;height:40px;border-radius:50%;font-size:1em}
+    .attach-btn{width:38px;height:38px;border-radius:50%;font-size:1.05em}
+
+    /* AI window — bottom sheet style on mobile */
+    .ai-fab{bottom:max(16px,env(safe-area-inset-bottom));left:16px;width:46px;height:46px;border-radius:14px}
+    .ai-win{
+        position:fixed;left:0;right:0;bottom:0;width:100%;
+        height:65vh;border-radius:20px 20px 0 0;
+        border-bottom-left-radius:0;border-bottom-right-radius:0;
+    }
+    .ai-win .inp-bar{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+
+    /* Sidebar header */
+    .sb-head{padding:max(14px,env(safe-area-inset-top)) 14px 10px}
+    .my-av{width:36px;height:36px;border-radius:50%;font-size:18px}
+
+    /* User list items — taller for fat fingers */
+    .u-item{padding:11px 14px;border-radius:0;margin:0;border-bottom:1px solid var(--glass-b)}
+    .u-av{width:44px;height:44px;border-radius:50%;font-size:21px}
+    .u-name{font-size:.9em}
+    .u-status{font-size:.72em}
+
+    /* Modals fullscreen on mobile */
+    .prof-modal,.grp-modal{width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh;overflow-y:auto}
+    .overlay{align-items:flex-end}
+
+    /* Tabs */
+    .sb-tabs{padding:0 4px}
+    .sb-tab{padding:11px 0;font-size:.8em}
+
+    /* AI drag disabled on mobile */
+    .ai-head{cursor:default}
 }
-@media(min-width:641px){
-    .back-btn{display:none!important}
-    .chat{display:flex!important}
-    .sidebar{display:flex!important}
-}
-.back-btn{background:none;border:none;color:var(--accent);font-size:1.1em;cursor:pointer;padding:4px 8px;border-radius:8px;align-items:center;gap:4px;font-family:'Outfit',sans-serif;font-size:.85em;font-weight:600}
 
 /* SIDEBAR */
 .sidebar{width:300px;flex-shrink:0;background:var(--sidebar);backdrop-filter:blur(24px);border-right:1px solid var(--glass-b);display:flex;flex-direction:column}
@@ -836,17 +903,35 @@ document.onmouseup=()=>drg=false;
 document.getElementById('msg-in').onkeypress=e=>{if(e.key==='Enter')sendMsg()};
 document.getElementById('ai-in').onkeypress=e=>{if(e.key==='Enter')sendToAI()};
 
-// ── Mobile navigation ──────────────────────────────────────
+// ── Mobile navigation (Telegram style) ────────────────────
+function isMobile(){ return window.innerWidth<=680; }
+
 function showSidebar(){
     document.querySelector('.sidebar').classList.remove('hidden');
     document.querySelector('.chat').classList.remove('active');
+    // Close AI window if open
+    const aiw=document.getElementById('ai-win');
+    if(aiw) aiw.style.display='none';
 }
+
 function showChat(){
-    if(window.innerWidth<=640){
+    if(isMobile()){
         document.querySelector('.sidebar').classList.add('hidden');
         document.querySelector('.chat').classList.add('active');
     }
 }
+
+// Swipe back gesture
+(function(){
+    let sx=0,sy=0;
+    document.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+    document.addEventListener('touchend',e=>{
+        const dx=e.changedTouches[0].clientX-sx;
+        const dy=Math.abs(e.changedTouches[0].clientY-sy);
+        // Swipe right from left edge = go back
+        if(dx>60&&dy<40&&sx<30&&isMobile()) showSidebar();
+    },{passive:true});
+})();
 document.getElementById('login-name').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 document.getElementById('login-pass').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 </script>
