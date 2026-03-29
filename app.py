@@ -311,8 +311,23 @@ def bot_loop():
                     try:
                         spub=b64_decode_public_key(users[sender])
                         raw=decrypt_message(bot_priv,spub,m['ciphertext'])
-                        try: income=json.loads(raw).get('text',raw)
-                        except: income=raw
+                        try:
+                            parsed=json.loads(raw)
+                            income=parsed.get('text',raw)
+                            file_id=parsed.get('file_id')
+                        except:
+                            income=raw; file_id=None
+                        # Если прислали файл — добавляем описание к сообщению
+                        if file_id and file_id in files_store:
+                            meta=files_store[file_id]
+                            fname=meta['name']; fmime=meta['mime']
+                            if fmime.startswith('image/'):
+                                income=f"[Пользователь прислал изображение: {fname}]. Ответь что получил файл и можешь его описать если нужно."
+                            else:
+                                fsize=len(base64.b64decode(meta['data']))
+                                income=f"[Пользователь прислал файл: {fname}, размер: {fsize//1024}KB, тип: {fmime}]. Ответь что получил файл."
+                        elif income=='[file]':
+                            income="Пользователь прислал файл."
                         reply=try_builtin(income) or ask_ai(sender,income)
                         ct=encrypt_message(bot_priv,spub,json.dumps({"text":reply,"id":str(uuid.uuid4())}))
                         messages.setdefault(sender,[])

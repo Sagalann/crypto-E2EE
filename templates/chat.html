@@ -2,6 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Cyber Messenger E2EE</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -34,6 +35,26 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 @keyframes orb1{from{transform:translate(0,0)}to{transform:translate(60px,40px)}}
 @keyframes orb2{from{transform:translate(0,0)}to{transform:translate(-40px,-60px)}}
 .app{display:flex;height:100vh;position:relative;z-index:1}
+
+/* ════ MOBILE ════ */
+@media(max-width:640px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;height:100vh;flex-shrink:0;display:flex;flex-direction:column;transition:transform .3s ease}
+    .sidebar.hidden{display:none}
+    .chat{display:none;flex-direction:column;height:100vh}
+    .chat.active{display:flex}
+    .back-btn{display:flex!important}
+    .ai-fab{bottom:14px;left:14px;width:44px;height:44px;font-size:20px}
+    .ai-win{left:10px;right:10px;width:auto;bottom:70px}
+    .bubble{max-width:88%}
+    .inp-bar input{font-size:16px}
+}
+@media(min-width:641px){
+    .back-btn{display:none!important}
+    .chat{display:flex!important}
+    .sidebar{display:flex!important}
+}
+.back-btn{background:none;border:none;color:var(--accent);font-size:1.1em;cursor:pointer;padding:4px 8px;border-radius:8px;align-items:center;gap:4px;font-family:'Outfit',sans-serif;font-size:.85em;font-weight:600}
 
 /* SIDEBAR */
 .sidebar{width:300px;flex-shrink:0;background:var(--sidebar);backdrop-filter:blur(24px);border-right:1px solid var(--glass-b);display:flex;flex-direction:column}
@@ -280,6 +301,7 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 
   <div class="chat">
     <div class="chat-head">
+      <button class="back-btn" onclick="showSidebar()">← Назад</button>
       <div class="ch-av" id="ch-av">
         <div class="ch-online-ring" id="ch-online-ring"></div>
       </div>
@@ -312,6 +334,8 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   <div id="ai-msgs"></div>
   <div class="inp-bar">
     <button class="help-btn" onclick="sendCmd('/help')">❓</button>
+    <button class="attach-btn" onclick="document.getElementById('ai-file-input').click()" title="Прикрепить файл">📎</button>
+    <input type="file" id="ai-file-input" style="display:none" onchange="handleAIFileSelect(event)">
     <input type="text" id="ai-in" placeholder="Команда...">
     <button class="send-btn" onclick="sendToAI()" style="background:linear-gradient(135deg,var(--ai),#8b80ff);box-shadow:0 4px 12px var(--aiglow)">➤</button>
   </div>
@@ -446,7 +470,7 @@ function renderGroups(q){
 }
 
 async function openDM(u,av,nm){
-    targetId=u; targetType='dm'; unreadCounts[u]=0; renderedMsgIds.clear();
+    targetId=u; targetType='dm'; unreadCounts[u]=0; renderedMsgIds.clear(); showChat();
     const online=onlineMap[u]||false;
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').childNodes[0].nodeValue=av; // text node hack
@@ -470,7 +494,7 @@ async function openDM(u,av,nm){
 }
 
 async function openGroup(gid,g){
-    renderedMsgIds.clear();
+    renderedMsgIds.clear(); showChat();
     targetId=gid; targetType='group'; unreadCounts[gid]=0;
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').innerHTML=`${g.avatar}`;
@@ -782,6 +806,22 @@ async function createGroup(){
 
 // ── AI ────────────────────────────────────────────────────────
 function toggleAI(){const w=document.getElementById('ai-win');w.style.display=w.style.display==='flex'?'none':'flex';if(w.style.display==='flex')w.style.animation='slideUp .25s ease'}
+async function handleAIFileSelect(e){
+    const file=e.target.files[0]; if(!file) return;
+    const fd=new FormData(); fd.append('file',file); fd.append('user_id',myId);
+    const optimisticId='opt_ai_'+Date.now();
+    addBubble(myId,'📎 '+file.name,true,'ai-msgs',optimisticId,null,true,null);
+    try{
+        const r=await fetch('/upload',{method:'POST',body:fd});
+        const d=await r.json();
+        if(d.file_id){
+            await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({from:myId,to:'Crypto_Assistor',message:'[file]',file_id:d.file_id})});
+        }
+    }catch(ex){console.error(ex)}
+    e.target.value='';
+}
+
 function sendCmd(c){document.getElementById('ai-in').value=c;sendToAI()}
 function fillCmd(c){const i=document.getElementById('ai-in');i.value=c;i.focus()}
 
@@ -795,6 +835,18 @@ document.onmouseup=()=>drg=false;
 // ── Enter ─────────────────────────────────────────────────────
 document.getElementById('msg-in').onkeypress=e=>{if(e.key==='Enter')sendMsg()};
 document.getElementById('ai-in').onkeypress=e=>{if(e.key==='Enter')sendToAI()};
+
+// ── Mobile navigation ──────────────────────────────────────
+function showSidebar(){
+    document.querySelector('.sidebar').classList.remove('hidden');
+    document.querySelector('.chat').classList.remove('active');
+}
+function showChat(){
+    if(window.innerWidth<=640){
+        document.querySelector('.sidebar').classList.add('hidden');
+        document.querySelector('.chat').classList.add('active');
+    }
+}
 document.getElementById('login-name').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 document.getElementById('login-pass').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 </script>
