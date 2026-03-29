@@ -357,6 +357,7 @@ async function doLogin(){
         setInterval(refreshAll,3000);
         setInterval(heartbeat,10000);
         heartbeat();
+        refreshAll(); // сразу показываем пользователей
     }catch(e){err.innerText='Ошибка сети'}
 }
 
@@ -411,13 +412,18 @@ function filterList(){
 function renderUsers(users){
     const list=document.getElementById('user-list');list.innerHTML='';
     if(currentTab==='grp') return renderGroups('');
-    users.forEach(u=>{
-        if(u===myId||u==='Crypto_Assistor') return;
-        const p=allProfiles[u]||{};const av=p.avatar||u[0].toUpperCase();const nm=p.display_name||u;
+    const visible=users.filter(u=>u&&u!==myId&&u!=='Crypto_Assistor');
+    console.log('[users] всего:',users.length,'видим:',visible.length, visible);
+    visible.forEach(u=>{
+        const p=allProfiles[u]||{};const av=p.avatar||(u?u[0].toUpperCase():'?');const nm=p.display_name||u;
         const online=onlineMap[u]||false;const unread=unreadCounts[u]||0;
         const item=document.createElement('div');item.className='u-item'+(u===targetId&&targetType==='dm'?' active':'');
         item.innerHTML=`<div class="u-av">${av}<div class="online-ring ${online?'on':''}"></div></div><div class="u-info"><div class="u-name">${nm}</div><div class="u-status">${online?'🟢 в сети':'⚫ не в сети'}</div></div>${unread>0?`<div class="u-unread">${unread}</div>`:''}`;
-        item.onclick=()=>openDM(u,av,nm);
+        item.onclick=()=>{
+            const av2=(allProfiles[u]||{}).avatar||(u?u[0].toUpperCase():'?');
+            const nm2=(allProfiles[u]||{}).display_name||u;
+            openDM(u,av2,nm2);
+        };
         list.appendChild(item);
     });
     // Добавляем кнопку создания группы внизу если во вкладке чатов
@@ -460,7 +466,6 @@ async function openDM(u,av,nm){
     const buf=msgBuffer[u]||[];
     if(buf.length){buf.forEach(m=>addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id));msgBuffer[u]=[];}
     document.querySelectorAll('.u-item').forEach(x=>x.classList.remove('active'));
-    event&&event.currentTarget&&event.currentTarget.classList.add('active');
     filterList();
 }
 
@@ -491,6 +496,7 @@ async function refreshAll(){
             fetch('/users/online').then(r=>r.json()),
             fetch(`/groups?user_id=${myId}`).then(r=>r.json())
         ]);
+        console.log('[refreshAll] users:', us, 'profiles keys:', Object.keys(ps));
         allUsers=us; allProfiles=ps; onlineMap=online; allGroups=grps;
         filterList();
         // Обновляем заголовок если открыт DM
