@@ -241,7 +241,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border-radius:5px;padding:1px 5px;font-size:.87em;font-family:'Courier New',monospace}
 
 /* AI */
-.ai-fab{position:fixed;bottom:26px;left:124px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:.25s}
+.ai-fab{position:fixed;bottom:26px;left:124px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
 .ai-fab:hover{transform:scale(1.08) rotate(-5deg)}
 .ai-win{position:fixed;bottom:90px;left:326px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
 @keyframes slideUp{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -401,7 +401,7 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   </div>
 </div>
 
-<div class="ai-fab" onclick="toggleAI()">🤖</div>
+<div class="ai-fab" id="ai-fab">🤖</div>
 <div class="ai-win" id="ai-win">
   <div class="ai-head" id="ai-drag">
     <div class="ai-head-l"><div class="ai-av">🤖</div><div><div style="font-size:.88em">Crypto Assistant</div><div style="font-size:.68em;opacity:.6;font-weight:400">E2EE · всегда онлайн</div></div></div>
@@ -902,19 +902,77 @@ function sendCmd(c){document.getElementById('ai-in').value=c;sendToAI()}
 function fillCmd(c){const i=document.getElementById('ai-in');i.value=c;i.focus()}
 
 // Drag AI
-const aiW=document.getElementById('ai-win'),aiD=document.getElementById('ai-drag');
+const aiW=document.getElementById('ai-win');
+const aiD=document.getElementById('ai-drag');
+const aiFab=document.getElementById('ai-fab');
+
+// ── Drag for ai-win header ──────────────────────────────
 let drg=false,ox,oy;
 aiD.onmousedown=e=>{drg=true;ox=e.clientX-aiW.offsetLeft;oy=e.clientY-aiW.offsetTop};
 document.onmousemove=e=>{
-    if(!drg) return;
-    const minLeft=320; // правее сайдбара
-    const maxLeft=window.innerWidth-aiW.offsetWidth-8;
-    const maxTop=window.innerHeight-aiW.offsetHeight-8;
-    const newLeft=Math.min(Math.max(e.clientX-ox, minLeft), maxLeft);
-    const newTop=Math.min(Math.max(e.clientY-oy, 8), maxTop);
-    aiW.style.left=newLeft+'px';aiW.style.top=newTop+'px';aiW.style.bottom='auto';
+    if(drg){
+        const maxLeft=window.innerWidth-aiW.offsetWidth-8;
+        const maxTop=window.innerHeight-aiW.offsetHeight-8;
+        aiW.style.left=Math.min(Math.max(e.clientX-ox,8),maxLeft)+'px';
+        aiW.style.top=Math.min(Math.max(e.clientY-oy,8),maxTop)+'px';
+        aiW.style.bottom='auto';
+    }
+    if(fabDrg){
+        const fab=aiFab;
+        const size=fab.offsetWidth;
+        const nx=Math.min(Math.max(e.clientX-fox,8),window.innerWidth-size-8);
+        const ny=Math.min(Math.max(e.clientY-foy,8),window.innerHeight-size-8);
+        fab.style.left=nx+'px'; fab.style.top=ny+'px';
+        fab.style.bottom='auto'; fab.style.right='auto';
+        fabMoved=true;
+    }
 };
-document.onmouseup=()=>drg=false;
+document.onmouseup=e=>{
+    drg=false;
+    if(fabDrg){
+        fabDrg=false;
+        aiFab.style.cursor='grab';
+        aiFab.style.transform='';
+        if(!fabMoved) toggleAI(); // клик без перетаскивания
+        fabMoved=false;
+    }
+};
+
+// ── Drag for ai-fab (mouse) ─────────────────────────────
+let fabDrg=false,fox,foy,fabMoved=false;
+aiFab.onmousedown=e=>{
+    e.preventDefault();
+    fabDrg=true; fabMoved=false;
+    fox=e.clientX-aiFab.offsetLeft;
+    foy=e.clientY-aiFab.offsetTop;
+    aiFab.style.cursor='grabbing';
+    aiFab.style.transform='scale(1.12)';
+};
+
+// ── Drag for ai-fab (touch) ─────────────────────────────
+aiFab.addEventListener('touchstart',e=>{
+    const t=e.touches[0];
+    fabDrg=true; fabMoved=false;
+    fox=t.clientX-aiFab.offsetLeft;
+    foy=t.clientY-aiFab.offsetTop;
+    aiFab.style.bottom='auto';
+},{passive:true});
+aiFab.addEventListener('touchmove',e=>{
+    if(!fabDrg) return;
+    e.preventDefault();
+    const t=e.touches[0];
+    const size=aiFab.offsetWidth;
+    const nx=Math.min(Math.max(t.clientX-fox,8),window.innerWidth-size-8);
+    const ny=Math.min(Math.max(t.clientY-foy,8),window.innerHeight-size-8);
+    aiFab.style.left=nx+'px'; aiFab.style.top=ny+'px';
+    aiFab.style.right='auto';
+    fabMoved=true;
+},{passive:false});
+aiFab.addEventListener('touchend',()=>{
+    fabDrg=false;
+    if(!fabMoved) toggleAI();
+    fabMoved=false;
+});
 
 // ── Enter ─────────────────────────────────────────────────────
 document.getElementById('msg-in').onkeypress=e=>{if(e.key==='Enter')sendMsg()};
