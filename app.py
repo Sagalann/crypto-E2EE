@@ -72,6 +72,10 @@ def heartbeat():
 @app.get('/users')
 def list_users(): return jsonify(list(users.keys()))
 
+@app.get('/users/online')
+def users_online():
+    return jsonify({uid: is_online(uid) for uid in users})
+
 @app.get('/public_key/<user_id>')
 def get_key(user_id): return jsonify({"public_key": users.get(user_id)})
 
