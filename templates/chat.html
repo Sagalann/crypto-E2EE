@@ -93,13 +93,22 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
     .attach-btn{width:38px;height:38px;border-radius:50%;font-size:1.05em}
 
     /* AI window — bottom sheet style on mobile */
-    .ai-fab{bottom:max(16px,env(safe-area-inset-bottom));left:16px;width:46px;height:46px;border-radius:14px}
+    .ai-fab{bottom:max(16px,env(safe-area-inset-bottom));right:16px;left:auto;width:46px;height:46px;border-radius:14px;font-size:20px}
     .ai-win{
-        position:fixed;left:0;right:0;bottom:0;width:100%;
-        height:65vh;border-radius:20px 20px 0 0;
-        border-bottom-left-radius:0;border-bottom-right-radius:0;
+        left:8px!important;right:8px!important;bottom:72px!important;
+        width:auto!important;top:auto!important;
+        height:50vh;max-height:420px;
+        border-radius:18px!important;
     }
-    .ai-win .inp-bar{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+    .ai-win .inp-bar{
+        padding:8px 10px;
+        padding-bottom:max(10px,env(safe-area-inset-bottom));
+        flex-wrap:nowrap;gap:6px;
+    }
+    .ai-win .inp-bar input{font-size:16px;min-width:0;flex:1}
+    .ai-win .help-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
+    .ai-win .attach-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
+    .ai-win .send-btn{width:36px;height:36px;flex-shrink:0}
 
     /* Sidebar header */
     .sb-head{padding:max(14px,env(safe-area-inset-top)) 14px 10px}
@@ -232,19 +241,19 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border-radius:5px;padding:1px 5px;font-size:.87em;font-family:'Courier New',monospace}
 
 /* AI */
-.ai-fab{position:fixed;bottom:26px;left:26px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:.25s}
+.ai-fab{position:fixed;bottom:26px;left:124px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:.25s}
 .ai-fab:hover{transform:scale(1.08) rotate(-5deg)}
-.ai-win{position:fixed;bottom:90px;left:26px;width:350px;height:540px;background:rgba(10,16,35,.82);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
+.ai-win{position:fixed;bottom:90px;left:326px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
 @keyframes slideUp{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .ai-head{padding:13px 15px;background:linear-gradient(135deg,rgba(108,99,255,.5),rgba(59,158,255,.3));border-bottom:1px solid rgba(255,255,255,.1);font-weight:600;font-size:.91em;display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
 .ai-head-l{display:flex;align-items:center;gap:9px}
 .ai-av{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px}
 .ai-x{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:.2s}
 .ai-x:hover{background:rgba(255,100,100,.25)}
-#ai-msgs{flex-grow:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:7px}
+#ai-msgs{flex-grow:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:7px;min-height:0}
 #ai-msgs::-webkit-scrollbar{width:3px}
 #ai-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
-.help-btn{background:rgba(108,99,255,.2);color:var(--txt);border:1px solid rgba(108,99,255,.35);width:42px;height:42px;border-radius:11px;cursor:pointer;font-size:16px;flex-shrink:0;transition:.2s}
+.help-btn{background:rgba(108,99,255,.2);color:var(--txt);border:1px solid rgba(108,99,255,.35);width:42px;height:42px;border-radius:11px;cursor:pointer;font-size:18px;flex-shrink:0;transition:.2s;display:flex;align-items:center;justify-content:center;line-height:1}
 .help-btn:hover{background:rgba(108,99,255,.35)}
 
 /* PROFILE MODAL */
@@ -400,11 +409,11 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   </div>
   <div id="ai-msgs"></div>
   <div class="inp-bar">
-    <button class="help-btn" onclick="sendCmd('/help')">❓</button>
-    <button class="attach-btn" onclick="document.getElementById('ai-file-input').click()" title="Прикрепить файл">📎</button>
+    <button class="help-btn" onclick="sendCmd('/help')" style="flex-shrink:0">❓</button>
+    <button class="attach-btn" onclick="document.getElementById('ai-file-input').click()" title="Прикрепить файл" style="flex-shrink:0">📎</button>
     <input type="file" id="ai-file-input" style="display:none" onchange="handleAIFileSelect(event)">
-    <input type="text" id="ai-in" placeholder="Команда...">
-    <button class="send-btn" onclick="sendToAI()" style="background:linear-gradient(135deg,var(--ai),#8b80ff);box-shadow:0 4px 12px var(--aiglow)">➤</button>
+    <input type="text" id="ai-in" placeholder="Спроси что-нибудь..." style="min-width:0;flex:1">
+    <button class="send-btn" onclick="sendToAI()" style="background:linear-gradient(135deg,var(--ai),#8b80ff);box-shadow:0 4px 12px var(--aiglow);flex-shrink:0">➤</button>
   </div>
 </div>
 
@@ -896,7 +905,15 @@ function fillCmd(c){const i=document.getElementById('ai-in');i.value=c;i.focus()
 const aiW=document.getElementById('ai-win'),aiD=document.getElementById('ai-drag');
 let drg=false,ox,oy;
 aiD.onmousedown=e=>{drg=true;ox=e.clientX-aiW.offsetLeft;oy=e.clientY-aiW.offsetTop};
-document.onmousemove=e=>{if(drg){aiW.style.left=(e.clientX-ox)+'px';aiW.style.top=(e.clientY-oy)+'px';aiW.style.bottom='auto'}};
+document.onmousemove=e=>{
+    if(!drg) return;
+    const minLeft=320; // правее сайдбара
+    const maxLeft=window.innerWidth-aiW.offsetWidth-8;
+    const maxTop=window.innerHeight-aiW.offsetHeight-8;
+    const newLeft=Math.min(Math.max(e.clientX-ox, minLeft), maxLeft);
+    const newTop=Math.min(Math.max(e.clientY-oy, 8), maxTop);
+    aiW.style.left=newLeft+'px';aiW.style.top=newTop+'px';aiW.style.bottom='auto';
+};
 document.onmouseup=()=>drg=false;
 
 // ── Enter ─────────────────────────────────────────────────────
