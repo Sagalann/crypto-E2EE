@@ -324,7 +324,7 @@ let allUsers=[], allProfiles={}, onlineMap={};
 let allGroups={};
 let myProfile={display_name:'',avatar:'🙂',status:'',theme:'dark'};
 let selAv='🙂', selTheme='dark';
-let msgBuffer={}, unreadCounts={};
+let msgBuffer={}, unreadCounts={}, renderedMsgIds=new Set();
 let replyTo=null; // {id, from, text}
 let readStatuses={}; // {msg_id: bool}
 let groupLastTs={}; // {gid: ts}
@@ -426,13 +426,14 @@ function renderUsers(users){
         };
         list.appendChild(item);
     });
-    // Добавляем кнопку создания группы внизу если во вкладке чатов
-    const btn=document.createElement('button');btn.className='new-group-btn';btn.innerText='+ Создать группу';btn.onclick=openGrpModal;
-    list.appendChild(btn);
+    // Кнопка создания группы только во вкладке Группы
 }
 
 function renderGroups(q){
     const list=document.getElementById('user-list');list.innerHTML='';
+    // Кнопка "Создать группу" сверху
+    const topBtn=document.createElement('button');topBtn.className='new-group-btn';topBtn.innerText='+ Создать группу';topBtn.onclick=openGrpModal;
+    list.appendChild(topBtn);
     Object.entries(allGroups).forEach(([gid,g])=>{
         if(q&&!g.name.toLowerCase().includes(q)) return;
         const item=document.createElement('div');item.className='u-item'+(gid===targetId&&targetType==='group'?' active':'');
@@ -441,12 +442,11 @@ function renderGroups(q){
         item.onclick=()=>openGroup(gid,g);
         list.appendChild(item);
     });
-    const btn=document.createElement('button');btn.className='new-group-btn';btn.innerText='+ Создать группу';btn.onclick=openGrpModal;
-    list.appendChild(btn);
+    // Кнопка уже сверху — добавляется в renderGroups первой
 }
 
 async function openDM(u,av,nm){
-    targetId=u; targetType='dm'; unreadCounts[u]=0;
+    targetId=u; targetType='dm'; unreadCounts[u]=0; renderedMsgIds.clear();
     const online=onlineMap[u]||false;
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').childNodes[0].nodeValue=av; // text node hack
@@ -470,6 +470,7 @@ async function openDM(u,av,nm){
 }
 
 async function openGroup(gid,g){
+    renderedMsgIds.clear();
     targetId=gid; targetType='group'; unreadCounts[gid]=0;
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').innerHTML=`${g.avatar}`;
@@ -552,6 +553,9 @@ async function pollReadStatus(){
 
 // ── Bubbles ──────────────────────────────────────────────────
 function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId){
+    // Prevent duplicates
+    if(msgId && renderedMsgIds.has(msgId)) return;
+    if(msgId) renderedMsgIds.add(msgId);
     const box=document.getElementById(cid);
     const em=box.querySelector('.empty-state');if(em)em.remove();
 
@@ -705,14 +709,22 @@ async function loadFileInfo(fileId,fb){
         if(nameEl) nameEl.innerText=d.name||'Файл';
         const bytes=atob(d.data||'').length;
         if(sizeEl) sizeEl.innerText=bytes>1048576?(bytes/1048576).toFixed(1)+' MB':bytes>1024?(bytes/1024).toFixed(0)+' KB':bytes+' B';
-        // Если изображение — показать превью
+        // Если изображение — показать превью внутри пузыря
         if(d.mime&&d.mime.startsWith('image/')){
             const img=document.createElement('img');
             img.src='data:'+d.mime+';base64,'+d.data;
-            img.style.cssText='max-width:220px;max-height:160px;border-radius:10px;margin-top:6px;display:block;cursor:pointer';
-            img.onclick=()=>{window.open('data:'+d.mime+';base64,'+d.data)};
-            fb.parentNode.appendChild(img);
-            fb.style.display='none';
+            img.style.cssText='max-width:240px;max-height:200px;border-radius:12px;display:block;cursor:zoom-in;object-fit:cover;';
+            img.onclick=()=>{
+                const ov=document.createElement('div');
+                ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+                const big=document.createElement('img');
+                big.src=img.src;big.style.cssText='max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain';
+                ov.appendChild(big);ov.onclick=()=>ov.remove();
+                document.body.appendChild(ov);
+            };
+            // Вставляем вместо file-bubble
+            fb.replaceWith(img);
+            return;
         }
         fb.dataset.fileData=JSON.stringify(d);
     }catch(e){}
