@@ -1729,35 +1729,6 @@ async function loadFileInfo(fileId,fb){
             fb.replaceWith(img);
             return;
         }
-        // Видео — превью с кнопкой воспроизведения
-        if(d.mime&&d.mime.startsWith('video/')){
-            const wrap=document.createElement('div');
-            wrap.style.cssText='position:relative;display:inline-block;cursor:pointer;border-radius:12px;overflow:hidden;max-width:240px;';
-            const vid=document.createElement('video');
-            vid.src='data:'+d.mime+';base64,'+d.data;
-            vid.style.cssText='max-width:240px;max-height:200px;display:block;object-fit:cover;border-radius:12px;';
-            vid.preload='metadata';
-            const playBtn=document.createElement('div');
-            playBtn.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);border-radius:12px;transition:.15s;pointer-events:none;';
-            playBtn.innerHTML='<div style="width:44px;height:44px;background:rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;padding-left:3px;">▶</div>';
-            wrap.appendChild(vid);wrap.appendChild(playBtn);
-            wrap.onclick=()=>{
-                const ov=document.createElement('div');
-                ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;';
-                const bigV=document.createElement('video');
-                bigV.src=vid.src;bigV.controls=true;bigV.autoplay=true;
-                bigV.style.cssText='max-width:92vw;max-height:88vh;border-radius:12px;';
-                const closeBtn=document.createElement('div');
-                closeBtn.style.cssText='position:absolute;top:16px;right:20px;color:white;font-size:2em;cursor:pointer;line-height:1;';
-                closeBtn.innerText='×';
-                closeBtn.onclick=()=>{bigV.pause();ov.remove();};
-                ov.appendChild(bigV);ov.appendChild(closeBtn);
-                ov.onclick=(e)=>{if(e.target===ov){bigV.pause();ov.remove();}};
-                document.body.appendChild(ov);
-            };
-            fb.replaceWith(wrap);
-            return;
-        }
         fb.dataset.fileData=JSON.stringify(d);
     }catch(e){}
 }
