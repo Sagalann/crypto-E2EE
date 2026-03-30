@@ -65,6 +65,14 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 .nav-spacer{flex:1}
 .nav-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;border:none;box-shadow:0 3px 8px var(--aglow);transition:.2s;margin-top:4px}
 .nav-av:hover{transform:scale(1.08)}
+.nav-settings-wrap{position:relative;display:flex;flex-direction:column;align-items:center;margin-bottom:6px}
+.settings-dropdown{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px) scale(0.95);min-width:160px;background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:200;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.settings-dropdown.open{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0) scale(1)}
+.settings-menu-item{width:100%;background:none;border:none;color:var(--txt);font-size:.85em;font-family:'Outfit',sans-serif;font-weight:500;padding:8px 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left;transition:.15s}
+.settings-menu-item:hover{background:var(--glass-h)}
+.settings-menu-item.logout-item{color:#ff6464}
+.settings-menu-item.logout-item:hover{background:rgba(255,100,100,.12)}
+.settings-divider{height:1px;background:var(--glass-b);margin:4px 0}
 /* sidebar no longer has head */
 .sb-head{display:none!important}
 /* sidebar inner (list area) */
@@ -615,6 +623,21 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <span class="nav-badge" id="notif-badge">0</span>
     </button>
     <div class="nav-spacer"></div>
+    <div class="nav-divider"></div>
+    <div class="nav-settings-wrap" id="nav-settings-wrap">
+      <button class="nav-btn" id="nav-settings-btn" onclick="toggleSettingsMenu(event)" title="Настройки">
+        ⚙️<span class="nav-label">Настр.</span>
+      </button>
+      <div class="settings-dropdown" id="settings-dropdown">
+        <button class="settings-menu-item" onclick="openProf()">
+          <span>👤</span> Профиль
+        </button>
+        <div class="settings-divider"></div>
+        <button class="settings-menu-item logout-item" onclick="doLogout()">
+          <span>🚪</span> Выйти
+        </button>
+      </div>
+    </div>
   </nav>
 
   <!-- SIDEBAR (list panel) -->
@@ -774,6 +797,26 @@ let lastActivityTs=Date.now();
 
 function saveAuth(uid,pw){ localStorage.setItem(AUTH_KEY,JSON.stringify({uid,pw,ts:Date.now()})); }
 function clearAuth(){ localStorage.removeItem(AUTH_KEY); }
+
+function toggleSettingsMenu(e){
+  e.stopPropagation();
+  const dd=document.getElementById('settings-dropdown');
+  dd.classList.toggle('open');
+}
+function closeSettingsMenu(){
+  document.getElementById('settings-dropdown').classList.remove('open');
+}
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('nav-settings-wrap');
+  if(wrap && !wrap.contains(e.target)) closeSettingsMenu();
+});
+
+function doLogout(){
+  closeSettingsMenu();
+  clearAuth();
+  myId='';
+  document.getElementById('login-screen').style.display='flex';
+}
 function touchActivity(){ lastActivityTs=Date.now(); localStorage.setItem(AUTH_KEY+'_ts',Date.now()); }
 
 // Track user activity
