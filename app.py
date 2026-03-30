@@ -136,6 +136,20 @@ def get_profile(user_id):
     if not p: return jsonify({"error":"not found"}),404
     return jsonify(p)
 
+@app.get('/user_profile/<user_id>')
+def get_user_profile(user_id):
+    """Public profile info for viewing another user's profile card."""
+    p=profiles.get(user_id)
+    if not p: return jsonify({"error":"not found"}),404
+    return jsonify({
+        "display_name": p.get("display_name", user_id),
+        "avatar": p.get("avatar","🙂"),
+        "status": p.get("status",""),
+        "is_private": p.get("is_private",False),
+        "online": is_online(user_id),
+        "user_id": user_id
+    })
+
 @app.post('/profile/<user_id>')
 def set_profile(user_id):
     profiles.setdefault(user_id,{"display_name":user_id,"avatar":"🙂","status":"","theme":"dark"})
@@ -218,6 +232,48 @@ def chat_history_route():
     touch(uid)
     return jsonify(chat_msgs.get(chat_key(uid,other),[]))
 
+@app.delete('/message/<msg_id>')
+def delete_message(msg_id):
+    uid=request.args.get('user_id','')
+    if uid not in user_keys: return jsonify({"error":"unauthorized"}),401
+    touch(uid)
+    # Search in all DM chats
+    for ck, msgs in chat_msgs.items():
+        for m in msgs:
+            if m['id']==msg_id:
+                if m['from']!=uid: return jsonify({"error":"forbidden"}),403
+                m['deleted']=True; m['text']=''; m['file_id']=None
+                return jsonify({"status":"ok"})
+    # Search in group messages
+    for gid, msgs in group_msgs.items():
+        for m in msgs:
+            if m['id']==msg_id:
+                if m['from']!=uid: return jsonify({"error":"forbidden"}),403
+                m['deleted']=True; m['text']=''; m['file_id']=None
+                return jsonify({"status":"ok"})
+    return jsonify({"error":"not found"}),404
+
+@app.patch('/message/<msg_id>')
+def edit_message(msg_id):
+    uid=request.args.get('user_id','')
+    new_text=request.json.get('text','').strip()
+    if uid not in user_keys: return jsonify({"error":"unauthorized"}),401
+    if not new_text: return jsonify({"error":"empty"}),400
+    touch(uid)
+    for ck, msgs in chat_msgs.items():
+        for m in msgs:
+            if m['id']==msg_id:
+                if m['from']!=uid: return jsonify({"error":"forbidden"}),403
+                m['text']=new_text; m['edited']=True
+                return jsonify({"status":"ok"})
+    for gid, msgs in group_msgs.items():
+        for m in msgs:
+            if m['id']==msg_id:
+                if m['from']!=uid: return jsonify({"error":"forbidden"}),403
+                m['text']=new_text; m['edited']=True
+                return jsonify({"status":"ok"})
+    return jsonify({"error":"not found"}),404
+
 # ── Files ──────────────────────────────────────────────────
 @app.post('/upload')
 def upload_file():
@@ -244,10 +300,29 @@ def create_group():
     if uid not in user_keys or not name: return jsonify({"error":"invalid"}),400
     touch(uid)
     if uid not in members: members.append(uid)
+    # Filter private members: only add if they have accepted request from uid
+    allowed_members=[uid]
+    blocked=[]
+    for nm in members:
+        if nm==uid: continue
+        tp=profiles.get(nm,{})
+        if tp.get('is_private',False):
+            ok=False
+            for r in chat_requests.get(nm,[]):
+                if r['from']==uid and r['status']=='accepted': ok=True; break
+            if not ok:
+                for r in chat_requests.get(uid,[]):
+                    if r['from']==nm and r['status']=='accepted': ok=True; break
+            if ok: allowed_members.append(nm)
+            else: blocked.append(nm)
+        else:
+            allowed_members.append(nm)
     gid='g_'+str(uuid.uuid4())[:8]
-    groups[gid]={"name":name,"avatar":data.get('avatar','👥'),"members":members,"created_by":uid,"ts":time.time()}
+    groups[gid]={"name":name,"avatar":data.get('avatar','👥'),"members":allowed_members,"created_by":uid,"ts":time.time()}
     group_msgs[gid]=[]
-    return jsonify({"status":"ok","group_id":gid})
+    resp={"status":"ok","group_id":gid}
+    if blocked: resp["blocked"]=blocked
+    return jsonify(resp)
 
 @app.post('/group/<gid>/send')
 def group_send(gid):
@@ -278,7 +353,20 @@ def add_to_group(gid):
     data=request.json; uid=data.get('user_id',''); nm=data.get('member','')
     g=groups.get(gid)
     if not g or uid not in g['members']: return jsonify({"error":"forbidden"}),403
-    if nm in users and nm not in g['members']: g['members'].append(nm)
+    if nm not in users: return jsonify({"error":"user not found"}),404
+    if nm in g['members']: return jsonify({"status":"ok","members":g['members']})
+    # Privacy check: if nm is private, uid must have an accepted request from/to nm
+    tp=profiles.get(nm,{})
+    if tp.get('is_private',False):
+        allowed=False
+        for r in chat_requests.get(nm,[]):
+            if r['from']==uid and r['status']=='accepted': allowed=True; break
+        if not allowed:
+            for r in chat_requests.get(uid,[]):
+                if r['from']==nm and r['status']=='accepted': allowed=True; break
+        if not allowed:
+            return jsonify({"error":"private","message":f"Пользователь {nm} приватный — он должен принять ваш запрос сначала"}),403
+    g['members'].append(nm)
     return jsonify({"status":"ok","members":g['members']})
 
 # ── Chat Requests ──────────────────────────────────────────

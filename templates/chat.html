@@ -120,14 +120,11 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 .reply-preview b{color:var(--accent);display:block;font-size:.9em;margin-bottom:1px}
 
 /* read receipt */
-.read-status{font-size:.62em;color:var(--txt2);text-align:right;margin-top:3px;display:block}
+.read-status{font-size:.72em;color:var(--txt2);text-align:right;margin-top:3px;display:block;line-height:1}
 .read-status.seen{color:var(--accent)}
 
 /* message actions (hover) */
-.msg-actions{position:absolute;top:-28px;right:0;display:flex;gap:4px;opacity:0;transition:.15s;pointer-events:none;z-index:10}
-.bubble:hover .msg-actions{pointer-events:all}
-.msg-actions button{background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:7px;padding:4px 8px;font-size:.75em;cursor:pointer;color:var(--txt);font-family:'Outfit',sans-serif;transition:.15s;white-space:nowrap}
-.msg-actions button:hover{background:rgba(59,158,255,.2);border-color:rgba(59,158,255,.4)}
+.msg-actions{display:none!important}
 
 /* reply bar */
 #reply-bar{display:none;padding:8px 16px;background:rgba(59,158,255,.08);border-top:1px solid rgba(59,158,255,.2);align-items:center;gap:10px}
@@ -161,6 +158,42 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 .menu-btn.full{grid-column:span 2}
 .stego-copy-box{background:rgba(59,158,255,.08);border:1px dashed rgba(59,158,255,.4);padding:7px 11px;cursor:pointer;margin-top:6px;border-radius:9px;font-family:monospace;font-size:.83em;transition:.2s}
 code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border-radius:5px;padding:1px 5px;font-size:.87em;font-family:'Courier New',monospace}
+
+/* ── User Profile Card Modal ── */
+.user-prof-modal{background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:20px;padding:0;width:320px;overflow:hidden;animation:fadeUp .2s ease}
+.upm-cover{height:80px;background:linear-gradient(135deg,var(--accent2),var(--accent));position:relative}
+.upm-av{width:68px;height:68px;border-radius:18px;background:var(--glass);display:flex;align-items:center;justify-content:center;font-size:34px;position:absolute;bottom:-30px;left:20px;border:3px solid var(--modal-bg)}
+.upm-body{padding:40px 20px 20px}
+.upm-name{font-size:1.1em;font-weight:700}
+.upm-uid{font-size:.72em;color:var(--txt2);margin-top:2px}
+.upm-status{font-size:.8em;color:var(--txt2);margin-top:8px;font-style:italic;min-height:16px}
+.upm-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.upm-badge{font-size:.68em;padding:3px 8px;border-radius:12px;border:1px solid var(--glass-b);color:var(--txt2)}
+.upm-badge.online{border-color:rgba(46,204,113,.4);color:#2ecc71;background:rgba(46,204,113,.08)}
+.upm-badge.private{border-color:rgba(255,200,0,.3);color:#ffc800;background:rgba(255,200,0,.06)}
+.upm-actions{display:flex;gap:8px;margin-top:16px}
+.upm-btn{flex:1;padding:9px;border-radius:11px;font-size:.82em;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s;border:1px solid var(--glass-b);background:var(--glass);color:var(--txt)}
+.upm-btn:hover{background:rgba(59,158,255,.15);border-color:rgba(59,158,255,.4);color:var(--accent)}
+.upm-btn.primary{background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;color:white}
+.upm-btn.primary:hover{opacity:.9}
+
+/* ── Context menu ── */
+.ctx-menu{position:fixed;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:12px;padding:5px;min-width:160px;z-index:2000;box-shadow:0 10px 40px rgba(0,0,0,.5);animation:fadeUp .12s ease}
+.ctx-item{padding:8px 13px;border-radius:8px;font-size:.84em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s;white-space:nowrap}
+.ctx-item:hover{background:var(--glass-h)}
+.ctx-item.danger{color:#ff6464}
+.ctx-item.danger:hover{background:rgba(255,100,100,.12)}
+.ctx-sep{height:1px;background:var(--glass-b);margin:4px 0}
+
+/* ── Deleted / edited message ── */
+.msg-deleted{color:var(--txt2)!important;font-style:italic;opacity:.6}
+.msg-edited{font-size:.65em;color:var(--txt2);margin-left:4px;opacity:.7}
+
+/* ── Edit input in bubble ── */
+.edit-input{width:100%;background:var(--input-bg);border:1px solid rgba(59,158,255,.4);border-radius:8px;padding:6px 10px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.91em;outline:none;resize:none;margin-top:4px}
+.edit-actions{display:flex;gap:6px;margin-top:5px;justify-content:flex-end}
+.edit-save{background:var(--accent);border:none;border-radius:7px;padding:4px 12px;color:white;font-size:.78em;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600}
+.edit-cancel-btn{background:var(--glass);border:1px solid var(--glass-b);border-radius:7px;padding:4px 10px;color:var(--txt2);font-size:.78em;cursor:pointer;font-family:'Outfit',sans-serif}
 
 /* AI */
 .ai-fab{position:fixed;bottom:26px;left:74px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
@@ -496,6 +529,21 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   </div>
 </div>
 
+<!-- USER PROFILE MODAL -->
+<div class="overlay" id="user-prof-overlay" onclick="if(event.target===this)closeUserProf()">
+  <div class="user-prof-modal">
+    <div class="upm-cover"></div>
+    <div id="upm-av" class="upm-av">🙂</div>
+    <div class="upm-body">
+      <div id="upm-name" class="upm-name"></div>
+      <div id="upm-uid" class="upm-uid"></div>
+      <div id="upm-status" class="upm-status"></div>
+      <div class="upm-badges" id="upm-badges"></div>
+      <div class="upm-actions" id="upm-actions"></div>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div class="app">
   <!-- VERTICAL NAV RAIL -->
@@ -819,6 +867,8 @@ async function openDM(u,av,nm){
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').innerHTML=`${av}<div class="ch-online-ring ${online?'on':''}"></div>`;
     document.getElementById('ch-title').innerText=nm;
+    document.getElementById('ch-title').style.cursor='pointer';
+    document.getElementById('ch-title').onclick=()=>openUserProf(u);
     document.getElementById('ch-sub').innerText=online?'🟢 в сети':'⚫ не в сети';
     document.getElementById('e2ee-badge').style.display='flex';
     document.getElementById('messages').innerHTML='';
@@ -867,10 +917,10 @@ async function openDM(u,av,nm){
         if(targetId===u && targetType==='dm'){
             renderedMsgIds.clear(); // clear again — pollMsgs may have snuck IDs in
             document.getElementById('messages').innerHTML='';
-            hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id));
+            hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id,m.deleted,m.edited));
             // Flush buffer after history so no dupes
             const buf=msgBuffer[u]||[];
-            if(buf.length){buf.forEach(m=>addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id));msgBuffer[u]=[];}
+            if(buf.length){buf.forEach(m=>addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id,m.deleted,m.edited));msgBuffer[u]=[];}
         }
         await fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:u})});
         pollReadStatus();
@@ -897,7 +947,7 @@ async function openGroup(gid,g){
         if(targetId===loadingGid && targetType==='group'){
             renderedMsgIds.clear();
             document.getElementById('messages').innerHTML='';
-            msgs.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id));
+            msgs.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id,m.deleted,m.edited));
             if(msgs.length) groupLastTs[gid]=msgs[msgs.length-1].ts;
         }
     }catch(e){}
@@ -930,7 +980,7 @@ async function refreshAll(){
         if(targetId&&targetType==='group'){
             const since=groupLastTs[targetId]||0;
             const newMsgs=await fetch(`/group/${targetId}/messages?user_id=${myId}&since=${since}`).then(r=>r.json());
-            newMsgs.forEach(m=>{addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id);groupLastTs[targetId]=m.ts});
+            newMsgs.forEach(m=>{addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id,m.deleted,m.edited);groupLastTs[targetId]=m.ts});
         }
     }catch(e){}
 }
@@ -950,7 +1000,7 @@ async function pollMsgs(){
                     if(!msgBuffer[m.from]) msgBuffer[m.from]=[];
                     msgBuffer[m.from].push(m);
                 } else {
-                    addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id);
+                    addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id,m.deleted,m.edited);
                     fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:m.from})});
                 }
             } else {
@@ -992,13 +1042,13 @@ async function pollReadStatus(){
         statuses.forEach(s=>{
             readStatuses[s.id]=s.read;
             const el=document.querySelector(`[data-msg-id="${s.id}"] .read-status`);
-            if(el){el.innerText=s.read?'✓✓ Прочитано':'✓ Доставлено';el.className='read-status'+(s.read?' seen':'')}
+            if(el){el.innerText=s.read?'✓✓':'✓';el.className='read-status'+(s.read?' seen':'')}
         });
     }catch(e){}
 }
 
 // ── Bubbles ──────────────────────────────────────────────────
-function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId){
+function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId,deleted,edited){
     // Prevent duplicates
     if(msgId && renderedMsgIds.has(msgId)) return;
     if(msgId) renderedMsgIds.add(msgId);
@@ -1014,12 +1064,19 @@ function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId){
     b.className='bubble '+(mine?'mine':'theirs');
     if(msgId) b.dataset.msgId=msgId;
 
-    // Actions
-    const actions=document.createElement('div');actions.className='msg-actions';
-    const replyBtn=document.createElement('button');replyBtn.innerText='↩ Ответить';
-    replyBtn.onclick=(e)=>{e.stopPropagation();startReply(msgId,sender,text,mine)};
-    actions.appendChild(replyBtn);
-    b.appendChild(actions);
+    // Context menu on right-click / long-press
+    b.addEventListener('contextmenu',(e)=>{
+        e.preventDefault();
+        showCtxMenu(e,msgId,sender,text,mine,cid,b,deleted);
+    });
+    let longPressTimer;
+    b.addEventListener('touchstart',()=>{longPressTimer=setTimeout(()=>{
+        // simulate right-click position from center of bubble
+        const r=b.getBoundingClientRect();
+        showCtxMenu({clientX:r.left+r.width/2,clientY:r.top+r.height/2},msgId,sender,text,mine,cid,b,deleted);
+    },500)},{passive:true});
+    b.addEventListener('touchend',()=>clearTimeout(longPressTimer),{passive:true});
+    b.addEventListener('touchmove',()=>clearTimeout(longPressTimer),{passive:true});
 
     // Reply preview
     if(replyInfo){
@@ -1030,15 +1087,17 @@ function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId){
         b.appendChild(rp);
     }
 
-    // Sender name (group or AI)
+    // Sender name (group or AI) — clickable for profile
     if(!mine||(cid==='ai-msgs')){
         const s=document.createElement('span');s.className='sndr';
-        s.innerText=(sender==='AI'||sender==='Crypto_Assistor')?'🤖 Crypto AI':(allProfiles[sender]||{}).display_name||sender;
+        const isAI=(sender==='AI'||sender==='Crypto_Assistor');
+        s.innerText=isAI?'🤖 Crypto AI':(allProfiles[sender]||{}).display_name||sender;
+        if(!isAI){s.style.cursor='pointer';s.onclick=(e)=>{e.stopPropagation();openUserProf(sender)};}
         b.appendChild(s);
     }
 
     // File
-    if(fileId){
+    if(fileId&&!deleted){
         const fb=document.createElement('div');fb.className='file-bubble';
         fb.innerHTML='<div class="file-icon">📄</div><div class="file-info"><div class="file-name">Загрузка...</div><div class="file-size"></div></div>';
         fb.onclick=()=>downloadFile(fileId,fb);
@@ -1047,19 +1106,23 @@ function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId){
     }
 
     // Text
-    if(text){
+    if(deleted){
+        const t=document.createElement('div');t.className='msg-deleted';t.innerText='🚫 Сообщение удалено';
+        b.appendChild(t);
+    } else if(text){
         const t=document.createElement('div');
         if(sender==='AI'||sender==='Crypto_Assistor') t.innerHTML=text;
         else t.innerText=text;
+        if(edited){const ed=document.createElement('span');ed.className='msg-edited';ed.innerText='ред.';t.appendChild(ed);}
         b.appendChild(t);
     }
 
-    // Read receipt (only for mine in DM)
+    // Read receipt — ticks only, no text
     if(mine&&cid==='messages'&&msgId){
         const rs=document.createElement('span');
         const seen=readStatuses[msgId]||read||false;
         rs.className='read-status'+(seen?' seen':'');
-        rs.innerText=seen?'✓✓ Прочитано':'✓ Доставлено';
+        rs.innerText=seen?'✓✓':'✓';
         b.appendChild(rs);
     }
 
@@ -1088,6 +1151,146 @@ function startReply(id,from,text,mine){
     document.getElementById('msg-in').focus();
 }
 function cancelReply(){replyTo=null;document.getElementById('reply-bar').style.display='none'}
+
+// ── Context Menu ──────────────────────────────────────────────
+let activeCtx=null;
+function closeCtx(){if(activeCtx){activeCtx.remove();activeCtx=null;}}
+document.addEventListener('click',closeCtx);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCtx();});
+
+function showCtxMenu(e,msgId,sender,text,mine,cid,bubbleEl,deleted){
+    closeCtx();
+    const menu=document.createElement('div');menu.className='ctx-menu';
+    menu.onclick=ev=>ev.stopPropagation();
+
+    // Reply — always available (unless deleted)
+    if(!deleted&&msgId){
+        addCtxItem(menu,'↩ Ответить',()=>{closeCtx();startReply(msgId,sender,text,mine);});
+    }
+
+    // Copy text
+    if(text&&!deleted){
+        addCtxItem(menu,'📋 Копировать',()=>{navigator.clipboard.writeText(text);closeCtx();});
+    }
+
+    // View profile (not mine, not AI)
+    if(!mine&&sender!=='AI'&&sender!=='Crypto_Assistor'){
+        addCtxItem(menu,'👤 Профиль',()=>{closeCtx();openUserProf(sender);});
+    }
+
+    // Mine-only actions
+    if(mine&&msgId&&!deleted){
+        const sep=document.createElement('div');sep.className='ctx-sep';menu.appendChild(sep);
+        addCtxItem(menu,'✏️ Редактировать',()=>{closeCtx();startEdit(msgId,text,bubbleEl);});
+        addCtxItem(menu,'🗑 Удалить',()=>{closeCtx();deleteMsg(msgId,bubbleEl);},true);
+    }
+
+    // Position
+    const vw=window.innerWidth,vh=window.innerHeight;
+    let x=e.clientX,y=e.clientY;
+    document.body.appendChild(menu);
+    const mw=menu.offsetWidth,mh=menu.offsetHeight;
+    if(x+mw>vw-8) x=vw-mw-8;
+    if(y+mh>vh-8) y=vh-mh-8;
+    menu.style.left=x+'px';menu.style.top=y+'px';
+    activeCtx=menu;
+}
+
+function addCtxItem(menu,label,cb,danger=false){
+    const item=document.createElement('div');
+    item.className='ctx-item'+(danger?' danger':'');
+    item.innerText=label;
+    item.onclick=cb;
+    menu.appendChild(item);
+}
+
+// ── Delete message ────────────────────────────────────────────
+async function deleteMsg(msgId,bubbleEl){
+    if(!msgId) return;
+    try{
+        const r=await fetch(`/message/${msgId}?user_id=${myId}`,{method:'DELETE'});
+        if(r.ok){
+            // Update UI in place
+            const textDiv=bubbleEl.querySelector('div:not(.reply-preview)');
+            if(textDiv){textDiv.className='msg-deleted';textDiv.innerText='🚫 Сообщение удалено';}
+            // Remove file bubble if present
+            const fb=bubbleEl.querySelector('.file-bubble');if(fb)fb.remove();
+            const img=bubbleEl.querySelector('img[style*="border-radius"]');if(img)img.remove();
+        }
+    }catch(ex){console.error(ex);}
+}
+
+// ── Edit message ──────────────────────────────────────────────
+function startEdit(msgId,currentText,bubbleEl){
+    // Find the text container — last div that's not reply-preview
+    const divs=[...bubbleEl.querySelectorAll('div')];
+    const textDiv=divs.filter(d=>!d.classList.contains('reply-preview')&&!d.classList.contains('file-bubble')&&!d.classList.contains('msg-actions')).pop();
+    if(!textDiv) return;
+    const original=currentText||'';
+    textDiv.style.display='none';
+
+    const ta=document.createElement('textarea');ta.className='edit-input';ta.value=original;ta.rows=Math.min(5,Math.ceil(original.length/40)||1);
+    const acts=document.createElement('div');acts.className='edit-actions';
+    const saveBtn=document.createElement('button');saveBtn.className='edit-save';saveBtn.innerText='Сохранить';
+    const cancelBtn=document.createElement('button');cancelBtn.className='edit-cancel-btn';cancelBtn.innerText='Отмена';
+    acts.appendChild(cancelBtn);acts.appendChild(saveBtn);
+
+    cancelBtn.onclick=()=>{ta.remove();acts.remove();textDiv.style.display='';};
+    saveBtn.onclick=async()=>{
+        const newText=ta.value.trim();
+        if(!newText){return;}
+        try{
+            const r=await fetch(`/message/${msgId}?user_id=${myId}`,{
+                method:'PATCH',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({text:newText})
+            });
+            if(r.ok){
+                textDiv.innerText=newText;
+                // Add/update edited mark
+                let ed=textDiv.querySelector('.msg-edited');
+                if(!ed){ed=document.createElement('span');ed.className='msg-edited';textDiv.appendChild(ed);}
+                ed.innerText=' ред.';
+                textDiv.style.display='';
+                ta.remove();acts.remove();
+            }
+        }catch(ex){console.error(ex);}
+    };
+
+    bubbleEl.insertBefore(ta,textDiv.nextSibling);
+    bubbleEl.insertBefore(acts,ta.nextSibling);
+    ta.focus();ta.select();
+}
+
+// ── User Profile Card ─────────────────────────────────────────
+async function openUserProf(uid){
+    try{
+        const p=await fetch(`/user_profile/${uid}`).then(r=>r.json());
+        if(p.error) return;
+        document.getElementById('upm-av').innerText=p.avatar||'🙂';
+        document.getElementById('upm-name').innerText=p.display_name||uid;
+        document.getElementById('upm-uid').innerText='@'+uid;
+        document.getElementById('upm-status').innerText=p.status||'';
+        const badges=document.getElementById('upm-badges');badges.innerHTML='';
+        if(p.online){const b=document.createElement('span');b.className='upm-badge online';b.innerText='🟢 В сети';badges.appendChild(b);}
+        else{const b=document.createElement('span');b.className='upm-badge';b.innerText='⚫ Не в сети';badges.appendChild(b);}
+        if(p.is_private){const b=document.createElement('span');b.className='upm-badge private';b.innerText='🔒 Приватный';badges.appendChild(b);}
+        // Actions
+        const acts=document.getElementById('upm-actions');acts.innerHTML='';
+        if(uid!==myId){
+            const msgBtn=document.createElement('button');msgBtn.className='upm-btn primary';msgBtn.innerText='💬 Написать';
+            msgBtn.onclick=()=>{
+                closeUserProf();
+                const av=(allProfiles[uid]||{}).avatar||'🙂';
+                const nm=(allProfiles[uid]||{}).display_name||uid;
+                openDM(uid,av,nm);
+            };
+            acts.appendChild(msgBtn);
+        }
+        document.getElementById('user-prof-overlay').classList.add('open');
+    }catch(ex){console.error(ex);}
+}
+function closeUserProf(){document.getElementById('user-prof-overlay').classList.remove('open');}
 
 // ── Send ─────────────────────────────────────────────────────
 async function sendMsg(){
@@ -1216,8 +1419,18 @@ function openGrpModal(){
     const pick=document.getElementById('grp-user-pick');pick.innerHTML='';
     allUsers.filter(u=>u!==myId&&u!=='Crypto_Assistor').forEach(u=>{
         const p=allProfiles[u]||{};const nm=p.display_name||u;
-        const d=document.createElement('div');d.className='user-pick';d.innerText=`${p.avatar||'🙂'} ${nm}`;
-        d.onclick=()=>toggleGrpMember(u,nm,d);pick.appendChild(d);
+        const isPrivate=p.is_private||false;
+        // Check if we have accepted connection with this user
+        let canAdd=!isPrivate;
+        if(isPrivate){
+            // We'll mark as restricted in UI — server will also enforce
+            canAdd=false; // server enforces, but we warn in UI
+        }
+        const d=document.createElement('div');d.className='user-pick';
+        d.style.display='flex';d.style.alignItems='center';d.style.justifyContent='space-between';
+        d.innerHTML=`<span>${p.avatar||'🙂'} ${nm}</span>${isPrivate?'<span style="font-size:.7em;color:#ffc800;opacity:.8">🔒</span>':''}`;
+        d.onclick=()=>toggleGrpMember(u,nm,d);
+        pick.appendChild(d);
     });
     document.getElementById('grp-overlay').classList.add('open');
 }
@@ -1245,6 +1458,10 @@ async function createGroup(){
     if(!name){alert('Введи название');return}
     const r=await fetch('/group/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,name,members:grpMembers})});
     const d=await r.json();
+    if(d.blocked&&d.blocked.length>0){
+        const names=d.blocked.map(u=>(allProfiles[u]||{}).display_name||u).join(', ');
+        alert(`⚠️ Не добавлены (приватный профиль): ${names}\nОни должны принять ваш запрос на переписку.`);
+    }
     closeGrp();await refreshAll();
     if(d.group_id&&allGroups[d.group_id]) openGroup(d.group_id,allGroups[d.group_id]);
 }
