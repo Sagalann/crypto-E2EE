@@ -66,8 +66,8 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 .nav-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;border:none;box-shadow:0 3px 8px var(--aglow);transition:.2s;margin-top:4px}
 .nav-av:hover{transform:scale(1.08)}
 .nav-settings-wrap{position:relative;display:flex;flex-direction:column;align-items:center;margin-bottom:6px}
-.settings-dropdown{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px) scale(0.95);min-width:160px;background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:200;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
-.settings-dropdown.open{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0) scale(1)}
+.settings-dropdown{position:fixed;bottom:12px;left:72px;min-width:160px;background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:9999;opacity:0;pointer-events:none;transform:translateX(-6px) scale(0.95);transition:opacity .15s,transform .15s}
+.settings-dropdown.open{opacity:1;pointer-events:all;transform:translateX(0) scale(1)}
 .settings-menu-item{width:100%;background:none;border:none;color:var(--txt);font-size:.85em;font-family:'Outfit',sans-serif;font-weight:500;padding:8px 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left;transition:.15s}
 .settings-menu-item:hover{background:var(--glass-h)}
 .settings-menu-item.logout-item{color:#ff6464}
@@ -201,7 +201,7 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .reaction-count{font-size:.75em;font-weight:600;color:var(--txt2)}
 .reaction.mine .reaction-count{color:var(--accent)}
 /* emoji picker */
-.emoji-picker{position:absolute;bottom:44px;right:0;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:4px;width:248px;max-height:320px;overflow-y:auto;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .15s ease}
+.emoji-picker{position:absolute;bottom:44px;right:0;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:14px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:auto;max-width:320px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .15s ease}
 .emoji-picker span{font-size:1.3em;cursor:pointer;padding:4px;border-radius:7px;transition:.1s;line-height:1}
 .emoji-picker span:hover{background:var(--glass-h);transform:scale(1.2)}
 .emoji-trigger{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:.9em;opacity:.6;transition:.15s;flex-shrink:0}
@@ -2227,15 +2227,6 @@ function showEmojiPicker(e, msgId, rbar, mine){
         quick.appendChild(s);
     });
     picker.appendChild(quick);
-    // Full emoji grid
-    const grid=document.createElement('div');
-    grid.style.cssText='display:flex;flex-wrap:wrap;gap:4px';
-    EMOJI_FULL.forEach(em=>{
-        const s=document.createElement('span');s.innerText=em;
-        s.onclick=()=>{sendReaction(msgId,em,rbar,mine);picker.remove();activeEmojiPicker=null;};
-        grid.appendChild(s);
-    });
-    picker.appendChild(grid);
     // Position relative to button
     const btnRect=e.target.getBoundingClientRect();
     // Smart position — show above or below depending on space
