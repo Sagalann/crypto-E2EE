@@ -144,6 +144,7 @@ def get_user_profile(user_id):
     return jsonify({
         "display_name": p.get("display_name", user_id),
         "avatar": p.get("avatar","🙂"),
+        "avatar_color": p.get("avatar_color","#1a6fd4,#3b9eff"),
         "status": p.get("status",""),
         "is_private": p.get("is_private",False),
         "online": is_online(user_id),
