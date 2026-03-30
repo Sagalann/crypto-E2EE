@@ -7,6 +7,45 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 GROQ_API_KEY  = os.environ.get("GROQ_API_KEY", "сюда_вставь_ключ")
+
+# ── Document text extraction ────────────────────────────────
+def extract_text_from_file(meta):
+    """Extract readable text from uploaded file for AI analysis."""
+    try:
+        data = base64.b64decode(meta['data'])
+        mime = meta['mime']
+        name = meta['name'].lower()
+
+        if mime == 'text/plain' or name.endswith('.txt') or name.endswith('.md'):
+            return data.decode('utf-8', errors='ignore')[:4000]
+
+        if mime == 'application/json' or name.endswith('.json'):
+            return data.decode('utf-8', errors='ignore')[:4000]
+
+        if name.endswith('.csv'):
+            return data.decode('utf-8', errors='ignore')[:3000]
+
+        if mime == 'application/pdf' or name.endswith('.pdf'):
+            try:
+                import fitz  # PyMuPDF
+                doc = fitz.open(stream=data, filetype='pdf')
+                text = ''.join(p.get_text() for p in doc)
+                return text[:4000]
+            except ImportError:
+                return None
+
+        if name.endswith('.docx'):
+            try:
+                import docx, io
+                doc = docx.Document(io.BytesIO(data))
+                return '\n'.join(p.text for p in doc.paragraphs)[:4000]
+            except ImportError:
+                return None
+
+        return None
+    except Exception as e:
+        print(f"extract_text error: {e}")
+        return None
 GROQ_URL      = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
 BOT_ID        = "Crypto_Assistor"
@@ -26,7 +65,10 @@ last_seen   = {}   # { uid: timestamp }
 groups      = {}   # { gid: {name, avatar, members, created_by} }
 group_msgs  = {}   # { gid: [{id, from, text, ts, reply_to, file_id}] }
 files_store = {}   # { fid: {name, mime, data, uploaded_by, ts} }
-chat_requests = {} # { to_uid: [{id, from, ts, status: pending/accepted/rejected}] }
+chat_requests  = {} # { to_uid: [{id, from, ts, status}] }
+channels       = {} # { cid: {name, avatar, about, owner, subscribers, ts} }
+channel_posts  = {} # { cid: [{id, from, text, ts, file_id}] }
+push_tokens    = {} # { uid: [subscription_info] }  — Web Push
 
 bot_priv, bot_pub = generate_identity_keypair()
 users[BOT_ID]    = b64_encode_key(bot_pub)
@@ -320,6 +362,115 @@ def chat_allowed():
             return jsonify({"allowed": True})
     return jsonify({"allowed": False})
 
+# ── Channels ───────────────────────────────────────────────
+
+@app.post('/channel/create')
+def create_channel():
+    data  = request.json
+    uid   = data.get('user_id','')
+    name  = data.get('name','').strip()
+    if uid not in user_keys or not name:
+        return jsonify({"error":"invalid"}), 400
+    touch(uid)
+    cid = 'ch_' + str(uuid.uuid4())[:8]
+    channels[cid] = {
+        "name": name, "avatar": data.get('avatar','📢'),
+        "about": data.get('about',''), "owner": uid,
+        "subscribers": [uid], "ts": time.time()
+    }
+    channel_posts[cid] = []
+    return jsonify({"status":"ok","channel_id":cid})
+
+@app.post('/channel/<cid>/post')
+def channel_post(cid):
+    ch = channels.get(cid)
+    if not ch: return jsonify({"error":"not found"}), 404
+    data   = request.json
+    sender = data.get('from','')
+    if sender != ch['owner']:
+        return jsonify({"error":"only owner can post"}), 403
+    touch(sender)
+    pid = str(uuid.uuid4())
+    channel_posts[cid].append({
+        "id": pid, "from": sender,
+        "text": data.get('message',''),
+        "ts": time.time(), "file_id": data.get('file_id')
+    })
+    return jsonify({"status":"ok","post_id":pid})
+
+@app.get('/channel/<cid>/posts')
+def channel_get_posts(cid):
+    ch = channels.get(cid)
+    if not ch: return jsonify({"error":"not found"}), 404
+    uid   = request.args.get('user_id','')
+    since = float(request.args.get('since',0))
+    if uid: touch(uid)
+    return jsonify([p for p in channel_posts.get(cid,[]) if p['ts']>since])
+
+@app.post('/channel/<cid>/subscribe')
+def channel_subscribe(cid):
+    ch  = channels.get(cid)
+    uid = request.json.get('user_id','')
+    if not ch or uid not in user_keys:
+        return jsonify({"error":"invalid"}), 400
+    touch(uid)
+    if uid not in ch['subscribers']:
+        ch['subscribers'].append(uid)
+    return jsonify({"status":"ok"})
+
+@app.post('/channel/<cid>/unsubscribe')
+def channel_unsubscribe(cid):
+    ch  = channels.get(cid)
+    uid = request.json.get('user_id','')
+    if ch and uid in ch['subscribers'] and uid != ch['owner']:
+        ch['subscribers'].remove(uid)
+    return jsonify({"status":"ok"})
+
+@app.get('/channels')
+def list_channels():
+    uid = request.args.get('user_id','')
+    if uid: touch(uid)
+    result = {}
+    for cid, ch in channels.items():
+        result[cid] = {
+            "name": ch['name'], "avatar": ch['avatar'],
+            "about": ch['about'], "owner": ch['owner'],
+            "subscribers": len(ch['subscribers']),
+            "subscribed": uid in ch['subscribers'],
+            "is_owner": uid == ch['owner']
+        }
+    return jsonify(result)
+
+@app.get('/channel/<cid>/info')
+def channel_info(cid):
+    ch = channels.get(cid)
+    if not ch: return jsonify({"error":"not found"}), 404
+    uid = request.args.get('user_id','')
+    return jsonify({
+        "name": ch['name'], "avatar": ch['avatar'],
+        "about": ch['about'], "owner": ch['owner'],
+        "subscribers": len(ch['subscribers']),
+        "subscribed": uid in ch['subscribers'],
+        "is_owner": uid == ch['owner']
+    })
+
+# ── Push Notifications ──────────────────────────────────────
+
+@app.post('/push/subscribe')
+def push_subscribe():
+    uid  = request.json.get('user_id','')
+    sub  = request.json.get('subscription')
+    if uid in user_keys and sub:
+        push_tokens.setdefault(uid,[])
+        if sub not in push_tokens[uid]:
+            push_tokens[uid].append(sub)
+    return jsonify({"status":"ok"})
+
+@app.get('/push/vapid-key')
+def vapid_key():
+    # Placeholder — real VAPID needs pywebpush
+    return jsonify({"key": os.environ.get("VAPID_PUBLIC_KEY","")})
+
 # ── AI Bot ─────────────────────────────────────────────────
 def groq_request(history):
     resp=requests.post(GROQ_URL,headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
@@ -407,17 +558,24 @@ def bot_loop():
                             file_id=parsed.get('file_id')
                         except:
                             income=raw; file_id=None
-                        # Если прислали файл — добавляем описание к сообщению
+                        # Если прислали файл — анализируем содержимое
                         if file_id and file_id in files_store:
                             meta=files_store[file_id]
                             fname=meta['name']; fmime=meta['mime']
+                            fsize=len(base64.b64decode(meta['data']))
+                            extracted=extract_text_from_file(meta)
                             if fmime.startswith('image/'):
-                                income=f"[Пользователь прислал изображение: {fname}]. Ответь что получил файл и можешь его описать если нужно."
+                                income=(f"Пользователь прислал изображение '{fname}'. "
+                                       f"Сообщи что получил изображение. Если пользователь попросит описать — скажи что для анализа изображений нужна vision-модель.")
+                            elif extracted:
+                                income=(f"Пользователь прислал документ '{fname}' ({fsize//1024}KB). "
+                                       f"Вот его содержимое для анализа:\n\n{extracted}\n\n"
+                                       f"Кратко резюмируй содержимое и спроси как ещё помочь с этим документом.")
                             else:
-                                fsize=len(base64.b64decode(meta['data']))
-                                income=f"[Пользователь прислал файл: {fname}, размер: {fsize//1024}KB, тип: {fmime}]. Ответь что получил файл."
+                                income=(f"Пользователь прислал файл '{fname}' ({fsize//1024}KB, {fmime}). "
+                                       f"Сообщи что получил файл. Для глубокого анализа бинарных файлов потребуется специальная обработка.")
                         elif income=='[file]':
-                            income="Пользователь прислал файл."
+                            income="Пользователь прислал файл, но содержимое недоступно."
                         reply=try_builtin(income) or ask_ai(sender,income)
                         ct=encrypt_message(bot_priv,spub,json.dumps({"text":reply,"id":str(uuid.uuid4())}))
                         messages.setdefault(sender,[])

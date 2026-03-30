@@ -256,6 +256,30 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .help-btn{background:rgba(108,99,255,.2);color:var(--txt);border:1px solid rgba(108,99,255,.35);width:42px;height:42px;border-radius:11px;cursor:pointer;font-size:18px;flex-shrink:0;transition:.2s;display:flex;align-items:center;justify-content:center;line-height:1}
 .help-btn:hover{background:rgba(108,99,255,.35)}
 
+/* CHANNELS */
+.ch-item{padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.18s;border-radius:10px;margin:2px 7px}
+.ch-item:hover{background:var(--glass-h)}
+.ch-item.active{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.22)}
+.ch-av{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ch-info{flex-grow:1;min-width:0}
+.ch-name{font-weight:600;font-size:.87em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-sub-count{font-size:.69em;color:var(--txt2);margin-top:1px}
+.ch-owner-badge{font-size:.62em;background:rgba(59,158,255,.15);color:var(--accent);border:1px solid rgba(59,158,255,.25);padding:2px 6px;border-radius:6px;flex-shrink:0}
+/* channel view */
+.channel-header{padding:14px 20px;background:var(--glass);border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:12px}
+.channel-header-av{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.channel-about{font-size:.72em;color:var(--txt2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.sub-btn{padding:6px 16px;border-radius:20px;font-size:.78em;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s;border:none}
+.sub-btn.subbed{background:var(--glass);color:var(--txt2);border:1px solid var(--glass-b)}
+.sub-btn.subbed:hover{background:rgba(255,100,100,.12);color:#ff6464;border-color:rgba(255,100,100,.3)}
+.sub-btn.not-subbed{background:linear-gradient(135deg,var(--accent2),var(--accent));color:white;box-shadow:0 3px 10px var(--aglow)}
+.post-bubble{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;padding:12px 16px;max-width:80%;margin:4px 0;animation:fadeUp .2s ease}
+.post-bubble img{max-width:260px;border-radius:10px;margin-top:8px;display:block}
+.new-channel-btn{margin:8px 14px;padding:9px;border-radius:10px;border:1px dashed rgba(59,158,255,.3);background:transparent;color:var(--accent);font-size:.8em;cursor:pointer;width:calc(100% - 28px);font-family:'Outfit',sans-serif;transition:.2s}
+.new-channel-btn:hover{background:rgba(59,158,255,.08)}
+/* create channel modal */
+.ch-modal{background:var(--modal-bg);backdrop-filter:blur(30px);border:1px solid var(--glass-b);border-radius:22px;width:370px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden;animation:slideUp .25s ease}
+
 /* NOTIFICATIONS TAB */
 .notif-list{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow-y:auto;flex-grow:1}
 .notif-item{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;animation:fadeUp .2s ease}
@@ -429,10 +453,12 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <div class="sb-tab active" id="tab-dm" onclick="switchTab('dm')">💬 Чаты</div>
       <div class="sb-tab" id="tab-grp" onclick="switchTab('grp')">👥 Группы</div>
       <div class="sb-tab" id="tab-notif" onclick="switchTab('notif')">🔔<span class="tab-badge" id="notif-badge" style="display:none">0</span></div>
+      <div class="sb-tab" id="tab-ch" onclick="switchTab('ch')">📢</div>
     </div>
     <div class="sb-search" id="sb-search"><input type="text" placeholder="Поиск..." id="search" oninput="filterList()"></div>
     <div class="user-list" id="user-list"></div>
     <div class="notif-list" id="notif-list" style="display:none"></div>
+    <div class="user-list" id="ch-list" style="display:none"></div>
   </div>
 
   <div class="chat">
@@ -466,6 +492,25 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   </div>
 </div>
 
+<!-- CREATE CHANNEL MODAL -->
+<div class="overlay" id="ch-overlay" onclick="chOverlayClick(event)">
+  <div class="ch-modal">
+    <div class="pm-head">
+      <span>📢 Создать канал</span>
+      <button class="pm-x" onclick="closeCh()">×</button>
+    </div>
+    <div class="pm-body">
+      <div class="av-big" id="ch-av-preview">📢</div>
+      <div class="av-grid" id="ch-av-grid"></div>
+      <div><label class="pf-label">НАЗВАНИЕ КАНАЛА</label>
+        <input class="pf-input" id="ch-name-in" placeholder="Мой канал..."></div>
+      <div><label class="pf-label">ОПИСАНИЕ</label>
+        <textarea class="pf-ta" id="ch-about-in" rows="2" placeholder="О чём этот канал?"></textarea></div>
+      <button class="save-btn" onclick="createChannel()">📢 Создать канал</button>
+    </div>
+  </div>
+</div>
+
 <div class="ai-fab" id="ai-fab">🤖</div>
 <div class="ai-win" id="ai-win">
   <div class="ai-head" id="ai-drag">
@@ -490,6 +535,9 @@ let allGroups={};
 let myProfile={display_name:'',avatar:'🙂',status:'',theme:'dark'};
 let selAv='🙂', selTheme='dark';
 let msgBuffer={}, unreadCounts={}, renderedMsgIds=new Set();
+let allChannels={}, currentChannelId=null, channelLastTs={};
+let selChAv='📢';
+const CH_EMOJIS=['📢','📻','🎙️','📡','🗞️','💡','🚀','🎯','🔥','⚡','🌍','🎓','💎','🏆','🎪'];
 let replyTo=null; // {id, from, text}
 let readStatuses={}; // {msg_id: bool}
 let groupLastTs={}; // {gid: ts}
@@ -522,6 +570,8 @@ async function doLogin(){
         setInterval(refreshAll,3000);
         setInterval(heartbeat,10000);
         setInterval(pollRequests,5000);
+        setInterval(pollChannelPosts,2000);
+        setTimeout(initPushNotifications,2000);
         heartbeat();
         refreshAll(); // сразу показываем пользователей
     }catch(e){err.innerText='Ошибка сети'}
@@ -563,13 +613,17 @@ async function saveProf(){const isPrivate=document.getElementById('pf-private').
 // ── Tabs ─────────────────────────────────────────────────────
 function switchTab(tab){
     currentTab=tab;
-    document.getElementById('tab-dm').classList.toggle('active',tab==='dm');
-    document.getElementById('tab-grp').classList.toggle('active',tab==='grp');
-    document.getElementById('tab-notif').classList.toggle('active',tab==='notif');
-    document.getElementById('user-list').style.display=tab==='notif'?'none':'';
+    const tabs=['dm','grp','notif','ch'];
+    tabs.forEach(t=>{
+        const el=document.getElementById('tab-'+t);
+        if(el) el.classList.toggle('active',t===tab);
+    });
+    document.getElementById('user-list').style.display=(tab==='notif'||tab==='ch')?'none':'';
     document.getElementById('notif-list').style.display=tab==='notif'?'flex':'none';
-    document.getElementById('sb-search').style.display=tab==='notif'?'none':'';
+    document.getElementById('ch-list').style.display=tab==='ch'?'block':'none';
+    document.getElementById('sb-search').style.display=(tab==='notif'||tab==='ch')?'none':'';
     if(tab==='notif') renderNotifications();
+    else if(tab==='ch') renderChannelList();
     else filterList();
 }
 
@@ -1100,6 +1154,148 @@ function renderNotifications(){
             </div>`;
         list.appendChild(item);
     });
+}
+
+// ── Channels ───────────────────────────────────────────────
+async function renderChannelList(){
+    const list=document.getElementById('ch-list');
+    list.innerHTML='';
+    // Create button at top
+    const btn=document.createElement('button');btn.className='new-channel-btn';
+    btn.innerText='+ Создать канал';btn.onclick=openChModal;
+    list.appendChild(btn);
+    try{
+        const chs=await fetch(`/channels?user_id=${myId}`).then(r=>r.json());
+        allChannels=chs;
+        if(!Object.keys(chs).length){
+            const em=document.createElement('div');
+            em.style.cssText='text-align:center;color:var(--txt2);font-size:.83em;padding:30px 16px;opacity:.6';
+            em.innerText='Нет каналов. Создай свой!';
+            list.appendChild(em); return;
+        }
+        Object.entries(chs).forEach(([cid,ch])=>{
+            const item=document.createElement('div');
+            item.className='ch-item'+(cid===currentChannelId?' active':'');
+            item.innerHTML=`
+                <div class="ch-av">${ch.avatar}</div>
+                <div class="ch-info">
+                    <div class="ch-name">${ch.name}</div>
+                    <div class="ch-sub-count">${ch.subscribers} подписчиков</div>
+                </div>
+                ${ch.is_owner?'<span class="ch-owner-badge">Мой</span>':''}`;
+            item.onclick=()=>openChannel(cid,ch);
+            list.appendChild(item);
+        });
+    }catch(e){}
+}
+
+async function openChannel(cid, ch){
+    currentChannelId=cid; renderedMsgIds.clear(); showChat();
+    document.getElementById('ch-av').style.display='flex';
+    document.getElementById('ch-av').innerHTML=ch.avatar;
+    document.getElementById('ch-title').innerText=ch.name;
+    document.getElementById('ch-sub').innerText=ch.about||`${ch.subscribers} подписчиков`;
+    document.getElementById('e2ee-badge').style.display='none';
+    document.getElementById('messages').innerHTML='';
+    document.getElementById('chat-blocked-view').style.display='none';
+    document.getElementById('messages').style.display='flex';
+    // Show/hide input bar based on ownership
+    const inpBar=document.querySelector('.chat .inp-bar');
+    const isOwner=ch.is_owner;
+    if(inpBar) inpBar.style.display=isOwner?'flex':'none';
+    if(!isOwner){
+        // Show subscribe button in header
+    }
+    targetId=cid; targetType='channel';
+    channelLastTs[cid]=0;
+    try{
+        const posts=await fetch(`/channel/${cid}/posts?user_id=${myId}&since=0`).then(r=>r.json());
+        posts.forEach(p=>addBubble(p.from,p.text,p.from===myId,'messages',p.id,null,true,p.file_id));
+        if(posts.length) channelLastTs[cid]=posts[posts.length-1].ts;
+    }catch(e){}
+    // Update sub button in chat header
+    updateSubButton(cid,ch);
+    renderChannelList();
+}
+
+function updateSubButton(cid,ch){
+    let subBtn=document.getElementById('sub-btn');
+    if(!subBtn){
+        subBtn=document.createElement('button');
+        subBtn.id='sub-btn';
+        document.getElementById('ch-title').parentNode.appendChild(subBtn);
+    }
+    if(ch.is_owner){subBtn.style.display='none';return;}
+    subBtn.style.display='block';
+    subBtn.className='sub-btn '+(ch.subscribed?'subbed':'not-subbed');
+    subBtn.innerText=ch.subscribed?'Отписаться':'Подписаться';
+    subBtn.onclick=async()=>{
+        const url=ch.subscribed?`/channel/${cid}/unsubscribe`:`/channel/${cid}/subscribe`;
+        await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId})});
+        ch.subscribed=!ch.subscribed;
+        ch.subscribers+=ch.subscribed?1:-1;
+        updateSubButton(cid,ch);
+    };
+}
+
+// Channel modal
+const CH_AV_LIST=['📢','📻','🎙️','📡','🗞️','💡','🚀','🎯','🔥','⚡','🌍','🎓','💎','🏆','🎪'];
+function openChModal(){
+    selChAv='📢';
+    document.getElementById('ch-av-preview').innerText='📢';
+    document.getElementById('ch-name-in').value='';
+    document.getElementById('ch-about-in').value='';
+    const g=document.getElementById('ch-av-grid');g.innerHTML='';
+    CH_AV_LIST.forEach(em=>{
+        const el=document.createElement('div');el.className='av-opt'+(em===selChAv?' sel':'');
+        el.innerText=em;
+        el.onclick=()=>{document.querySelectorAll('#ch-av-grid .av-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');selChAv=em;document.getElementById('ch-av-preview').innerText=em};
+        g.appendChild(el);
+    });
+    document.getElementById('ch-overlay').classList.add('open');
+}
+function closeCh(){document.getElementById('ch-overlay').classList.remove('open')}
+function chOverlayClick(e){if(e.target===document.getElementById('ch-overlay'))closeCh()}
+
+async function createChannel(){
+    const name=document.getElementById('ch-name-in').value.trim();
+    const about=document.getElementById('ch-about-in').value.trim();
+    if(!name) return;
+    try{
+        const r=await fetch('/channel/create',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,name,about,avatar:selChAv})});
+        const d=await r.json();
+        if(d.channel_id){closeCh();renderChannelList();}
+    }catch(e){}
+}
+
+// Poll channel posts
+async function pollChannelPosts(){
+    if(targetType!=='channel'||!currentChannelId) return;
+    try{
+        const since=channelLastTs[currentChannelId]||0;
+        const posts=await fetch(`/channel/${currentChannelId}/posts?user_id=${myId}&since=${since}`).then(r=>r.json());
+        posts.forEach(p=>{
+            addBubble(p.from,p.text,p.from===myId,'messages',p.id,null,true,p.file_id);
+            channelLastTs[currentChannelId]=p.ts;
+        });
+    }catch(e){}
+}
+
+// ── Push Notifications ──────────────────────────────────────
+async function initPushNotifications(){
+    if(!('Notification' in window)||!('serviceWorker' in navigator)) return;
+    try{
+        const perm=await Notification.requestPermission();
+        if(perm!=='granted') return;
+        console.log('Push notifications enabled');
+    }catch(e){}
+}
+
+function sendBrowserNotif(title, body, icon){
+    if(Notification.permission==='granted' && document.hidden){
+        new Notification(title,{body,icon:icon||'🔔',tag:'msg'});
+    }
 }
 
 function sendCmd(c){document.getElementById('ai-in').value=c;sendToAI()}

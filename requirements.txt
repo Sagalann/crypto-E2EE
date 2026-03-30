@@ -1,3 +1,5 @@
 flask
 requests
 pynacl
+PyMuPDF
+python-docx
