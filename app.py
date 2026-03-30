@@ -461,6 +461,22 @@ def list_channels():
         }
     return jsonify(result)
 
+@app.post('/channel/<cid>/edit')
+def channel_edit(cid):
+    ch = channels.get(cid)
+    if not ch: return jsonify({"error":"not found"}), 404
+    data = request.json
+    uid  = data.get('user_id','')
+    if uid != ch['owner']:
+        return jsonify({"error":"only owner can edit"}), 403
+    if 'name' in data and data['name'].strip():
+        ch['name'] = data['name'].strip()
+    if 'about' in data:
+        ch['about'] = data['about'].strip()
+    if 'avatar' in data and data['avatar']:
+        ch['avatar'] = data['avatar']
+    return jsonify({"status":"ok"})
+
 @app.get('/channel/<cid>/info')
 def channel_info(cid):
     ch = channels.get(cid)
@@ -616,8 +632,33 @@ def bot_loop():
                             fsize=len(base64.b64decode(meta['data']))
                             extracted=extract_text_from_file(meta)
                             if fmime.startswith('image/'):
-                                income=(f"Пользователь прислал изображение '{fname}'. "
-                                       f"Сообщи что получил изображение. Если пользователь попросит описать — скажи что для анализа изображений нужна vision-модель.")
+                                # Vision analysis via Groq llama-4-scout
+                                try:
+                                    vision_resp = requests.post(
+                                        GROQ_URL,
+                                        headers={"Authorization":f"Bearer {GROQ_API_KEY}","Content-Type":"application/json"},
+                                        json={
+                                            "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+                                            "messages": [{
+                                                "role": "user",
+                                                "content": [
+                                                    {"type":"image_url","image_url":{"url":f"data:{fmime};base64,{meta['data']}"}},
+                                                    {"type":"text","text": (income if income and income!='[file]' else "Опиши это изображение подробно. Используй HTML: <b>жирный</b>, <br>. Не используй markdown.")}
+                                                ]
+                                            }],
+                                            "max_tokens": 1024
+                                        },
+                                        timeout=30
+                                    )
+                                    vision_resp.raise_for_status()
+                                    reply = vision_resp.json()["choices"][0]["message"]["content"]
+                                    ct=encrypt_message(bot_priv,spub,json.dumps({"text":reply,"id":str(uuid.uuid4())}))
+                                    messages.setdefault(sender,[])
+                                    messages[sender].append({"from":BOT_ID,"ciphertext":ct,"msg_id":str(uuid.uuid4()),"timestamp":time.time()})
+                                    continue
+                                except Exception as ve:
+                                    income=(f"Пользователь прислал изображение '{fname}' ({fsize//1024}KB). "
+                                           f"Скажи что получил изображение, но произошла ошибка vision-анализа: {str(ve)[:80]}")
                             elif extracted:
                                 income=(f"Пользователь прислал документ '{fname}' ({fsize//1024}KB). "
                                        f"Вот его содержимое для анализа:\n\n{extracted}\n\n"

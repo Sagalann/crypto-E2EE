@@ -163,9 +163,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border-radius:5px;padding:1px 5px;font-size:.87em;font-family:'Courier New',monospace}
 
 /* AI */
-.ai-fab{position:fixed;bottom:26px;left:320px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
+.ai-fab{position:fixed;bottom:26px;left:74px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
 .ai-fab:hover{transform:scale(1.08) rotate(-5deg)}
-.ai-win{position:fixed;bottom:90px;left:316px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
+.ai-win{position:fixed;bottom:90px;left:74px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
 @keyframes slideUp{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .ai-head{padding:13px 15px;background:linear-gradient(135deg,rgba(108,99,255,.5),rgba(59,158,255,.3));border-bottom:1px solid rgba(255,255,255,.1);font-weight:600;font-size:.91em;display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
 .ai-head-l{display:flex;align-items:center;gap:9px}
@@ -584,6 +584,26 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   </div>
 </div>
 
+<!-- EDIT CHANNEL MODAL -->
+<div class="overlay" id="edit-ch-overlay" onclick="editChOverlayClick(event)">
+  <div class="ch-modal">
+    <div class="pm-head">
+      <span>✏️ Редактировать канал</span>
+      <button class="pm-x" onclick="closeEditCh()">×</button>
+    </div>
+    <div class="pm-body">
+      <input type="hidden" id="edit-ch-cid">
+      <div class="av-big" id="edit-ch-av-preview">📢</div>
+      <div class="av-grid" id="edit-ch-av-grid"></div>
+      <div><label class="pf-label">НАЗВАНИЕ КАНАЛА</label>
+        <input class="pf-input" id="edit-ch-name-in" placeholder="Название канала..."></div>
+      <div><label class="pf-label">ОПИСАНИЕ</label>
+        <textarea class="pf-ta" id="edit-ch-about-in" rows="2" placeholder="О чём этот канал?"></textarea></div>
+      <button class="save-btn" onclick="saveEditChannel()">💾 Сохранить изменения</button>
+    </div>
+  </div>
+</div>
+
 <div class="ai-fab" id="ai-fab">🤖</div>
 <div class="ai-win" id="ai-win">
   <div class="ai-head" id="ai-drag">
@@ -709,9 +729,36 @@ function switchTab(tab){
     nl.style.display=tab==='notif'?'flex':'none';
     cl.style.display=tab==='ch'?'block':'none';
     ss.style.display=(tab==='notif')?'none':'block';
+    // Reset right panel when switching away from current context
+    const prevType=targetType;
+    if(tab==='dm'&&targetType!=='dm'){ clearChatPanel(); targetId=''; targetType='dm'; }
+    if(tab==='grp'&&targetType!=='group'){ clearChatPanel(); targetId=''; targetType='group'; }
+    if(tab==='ch'&&targetType!=='channel'){ clearChatPanel(); currentChannelId=null; targetType='channel'; }
+    if(tab==='notif'){ clearChatPanel(); }
     if(tab==='notif') renderNotifications();
     else if(tab==='ch') renderChannelList();
     else filterList();
+}
+
+function clearChatPanel(){
+    document.getElementById('messages').innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><div>Выберите контакт для начала чата</div></div>';
+    document.getElementById('ch-title').innerText='Выберите контакт';
+    document.getElementById('ch-sub').innerText='';
+    document.getElementById('ch-av').style.display='none';
+    document.getElementById('e2ee-badge').style.display='none';
+    document.getElementById('chat-blocked-view').style.display='none';
+    document.getElementById('messages').style.display='flex';
+    const inpBar=document.querySelector('.chat .inp-bar');
+    if(inpBar) inpBar.style.display='flex';
+    const subBtn=document.getElementById('sub-btn');
+    if(subBtn) subBtn.style.display='none';
+    // Hide edit channel button if present
+    const editBtn=document.getElementById('ch-edit-btn');
+    if(editBtn) editBtn.style.display='none';
+    cancelReply();
+    renderedMsgIds.clear();
+    // On mobile: go back to sidebar
+    if(isMobile()) showSidebar();
 }
 
 // ── Users list ───────────────────────────────────────────────
@@ -1367,9 +1414,6 @@ async function openChannel(cid, ch){
     const inpBar=document.querySelector('.chat .inp-bar');
     const isOwner=ch.is_owner;
     if(inpBar) inpBar.style.display=isOwner?'flex':'none';
-    if(!isOwner){
-        // Show subscribe button in header
-    }
     targetId=cid; targetType='channel';
     channelLastTs[cid]=0;
     try{
@@ -1379,6 +1423,8 @@ async function openChannel(cid, ch){
     }catch(e){}
     // Update sub button in chat header
     updateSubButton(cid,ch);
+    // Show/hide edit button for owner
+    updateEditChannelButton(cid,ch);
     renderChannelList();
 }
 
@@ -1400,6 +1446,60 @@ function updateSubButton(cid,ch){
         ch.subscribers+=ch.subscribed?1:-1;
         updateSubButton(cid,ch);
     };
+}
+
+function updateEditChannelButton(cid, ch){
+    let editBtn=document.getElementById('ch-edit-btn');
+    if(!editBtn){
+        editBtn=document.createElement('button');
+        editBtn.id='ch-edit-btn';
+        editBtn.title='Редактировать канал';
+        editBtn.style.cssText='background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.25);border-radius:9px;padding:5px 10px;font-size:1em;cursor:pointer;color:var(--accent);transition:.18s;flex-shrink:0';
+        editBtn.onmouseover=()=>editBtn.style.background='rgba(59,158,255,.22)';
+        editBtn.onmouseout=()=>editBtn.style.background='rgba(59,158,255,.12)';
+        document.querySelector('.chat-head').appendChild(editBtn);
+    }
+    if(!ch.is_owner){editBtn.style.display='none';return;}
+    editBtn.style.display='block';
+    editBtn.innerText='✏️';
+    editBtn.onclick=()=>openEditChannelModal(cid,ch);
+}
+
+let selEditChAv='📢';
+function openEditChannelModal(cid,ch){
+    selEditChAv=ch.avatar||'📢';
+    document.getElementById('edit-ch-av-preview').innerText=selEditChAv;
+    document.getElementById('edit-ch-name-in').value=ch.name||'';
+    document.getElementById('edit-ch-about-in').value=ch.about||'';
+    const g=document.getElementById('edit-ch-av-grid');g.innerHTML='';
+    CH_AV_LIST.forEach(em=>{
+        const el=document.createElement('div');el.className='av-opt'+(em===selEditChAv?' sel':'');
+        el.innerText=em;
+        el.onclick=()=>{document.querySelectorAll('#edit-ch-av-grid .av-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');selEditChAv=em;document.getElementById('edit-ch-av-preview').innerText=em};
+        g.appendChild(el);
+    });
+    document.getElementById('edit-ch-cid').value=cid;
+    document.getElementById('edit-ch-overlay').classList.add('open');
+}
+function closeEditCh(){document.getElementById('edit-ch-overlay').classList.remove('open')}
+function editChOverlayClick(e){if(e.target===document.getElementById('edit-ch-overlay'))closeEditCh()}
+
+async function saveEditChannel(){
+    const cid=document.getElementById('edit-ch-cid').value;
+    const name=document.getElementById('edit-ch-name-in').value.trim();
+    const about=document.getElementById('edit-ch-about-in').value.trim();
+    if(!name) return;
+    try{
+        await fetch(`/channel/${cid}/edit`,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,name,about,avatar:selEditChAv})});
+        closeEditCh();
+        // Update header immediately
+        document.getElementById('ch-title').innerText=name;
+        document.getElementById('ch-sub').innerText=about||document.getElementById('ch-sub').innerText;
+        document.getElementById('ch-av').innerHTML=selEditChAv;
+        // Refresh channel list
+        renderChannelList();
+    }catch(e){}
 }
 
 // Channel modal
