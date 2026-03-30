@@ -35,6 +35,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 @keyframes orb1{from{transform:translate(0,0)}to{transform:translate(60px,40px)}}
 @keyframes orb2{from{transform:translate(0,0)}to{transform:translate(-40px,-60px)}}
 .app{display:flex;height:100vh;position:relative;z-index:1}
+.sidebar{width:240px;flex-shrink:0;background:var(--sidebar);backdrop-filter:blur(24px);border-right:1px solid var(--glass-b);display:flex;flex-direction:column}
 
 /* ════ BACK BTN (desktop hidden) ════ */
 .ai-drag-handle{padding:8px 0 4px;cursor:pointer;display:none}
@@ -124,16 +125,23 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
     .prof-modal,.grp-modal{width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh;overflow-y:auto}
     .overlay{align-items:flex-end}
 
-    /* Tabs */
-    .sb-tabs{padding:0 4px}
-    .sb-tab{padding:11px 0;font-size:.8em}
+    /* Nav rail — bottom bar on mobile */
+    .nav-rail{width:100%;height:56px;flex-direction:row;border-right:none;border-top:1px solid var(--glass-b);padding:0 8px;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--sidebar);backdrop-filter:blur(20px)}
+    .nav-btn{width:52px;height:48px;border-radius:10px;font-size:18px}
+    .nav-label{font-size:8px}
+    .nav-av{width:34px;height:34px;font-size:17px;margin-top:0}
+    .nav-divider{width:1px;height:30px;margin:0 2px}
+    .nav-spacer{display:none}
+    .app{flex-direction:column}
+    .sidebar{padding-bottom:56px}
+    #messages{padding-bottom:calc(56px + 12px)}
 
     /* AI drag disabled on mobile */
     .ai-head{cursor:default}
 }
 
 /* SIDEBAR */
-.sidebar{width:300px;flex-shrink:0;background:var(--sidebar);backdrop-filter:blur(24px);border-right:1px solid var(--glass-b);display:flex;flex-direction:column}
+/* sidebar width set in app CSS block */
 .sb-head{padding:13px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--glass-b)}
 .my-av{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:21px;cursor:pointer;flex-shrink:0;border:none;box-shadow:0 3px 10px var(--aglow);transition:.2s}
 .my-av:hover{transform:scale(1.08)}
@@ -144,9 +152,21 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 @keyframes pulse{0%,100%{box-shadow:0 0 6px var(--accent)}50%{box-shadow:0 0 13px var(--accent)}}
 
 /* tabs */
-.sb-tabs{display:flex;border-bottom:1px solid var(--glass-b)}
-.sb-tab{flex:1;padding:9px 0;font-size:.78em;font-weight:600;text-align:center;cursor:pointer;color:var(--txt2);border-bottom:2px solid transparent;transition:.2s}
-.sb-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+/* ── Vertical nav rail ── */
+.nav-rail{width:64px;flex-shrink:0;background:rgba(255,255,255,0.03);border-right:1px solid var(--glass-b);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;z-index:10}
+.nav-btn{width:44px;height:44px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--txt2);font-size:20px;transition:.18s;position:relative;gap:2px}
+.nav-btn:hover{background:var(--glass-h);color:var(--txt)}
+.nav-btn.active{background:rgba(59,158,255,.15);color:var(--accent)}
+.nav-btn .nav-label{font-size:9px;font-weight:600;font-family:'Outfit',sans-serif;line-height:1;letter-spacing:.2px}
+.nav-badge{position:absolute;top:4px;right:4px;background:var(--accent);color:white;font-size:.55em;font-weight:700;border-radius:50%;min-width:16px;height:16px;display:none;align-items:center;justify-content:center;padding:0 3px}
+.nav-divider{width:30px;height:1px;background:var(--glass-b);margin:4px 0}
+.nav-spacer{flex:1}
+.nav-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;border:none;box-shadow:0 3px 8px var(--aglow);transition:.2s;margin-top:4px}
+.nav-av:hover{transform:scale(1.08)}
+/* sidebar no longer has head */
+.sb-head{display:none!important}
+/* sidebar inner (list area) */
+.sidebar-inner{display:flex;flex-direction:column;flex:1;min-width:0}
 
 .sb-search{padding:9px 13px;border-bottom:1px solid var(--glass-b)}
 .sb-search input{width:100%;background:var(--input-bg);border:1px solid var(--glass-b);border-radius:9px;padding:7px 12px;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.83em;outline:none;transition:.2s}
@@ -241,9 +261,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border-radius:5px;padding:1px 5px;font-size:.87em;font-family:'Courier New',monospace}
 
 /* AI */
-.ai-fab{position:fixed;bottom:26px;left:124px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
+.ai-fab{position:fixed;bottom:26px;left:320px;width:52px;height:52px;background:linear-gradient(135deg,var(--ai),#8b80ff);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 5px 18px var(--aiglow);z-index:1000;font-size:24px;transition:box-shadow .2s,transform .2s}
 .ai-fab:hover{transform:scale(1.08) rotate(-5deg)}
-.ai-win{position:fixed;bottom:90px;left:326px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
+.ai-win{position:fixed;bottom:90px;left:316px;width:360px;height:520px;background:rgba(10,16,35,.92);backdrop-filter:blur(30px);border-radius:18px;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);z-index:1000;overflow:hidden}
 @keyframes slideUp{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .ai-head{padding:13px 15px;background:linear-gradient(135deg,rgba(108,99,255,.5),rgba(59,158,255,.3));border-bottom:1px solid rgba(255,255,255,.1);font-weight:600;font-size:.91em;display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
 .ai-head-l{display:flex;align-items:center;gap:9px}
@@ -440,21 +460,28 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 
 <!-- APP -->
 <div class="app">
+  <!-- VERTICAL NAV RAIL -->
+  <nav class="nav-rail">
+    <button class="nav-av" id="my-av" onclick="openProf()" title="Профиль">🙂</button>
+    <div class="nav-divider"></div>
+    <button class="nav-btn active" id="tab-dm" onclick="switchTab('dm')" title="Чаты">
+      💬<span class="nav-label">Чаты</span>
+    </button>
+    <button class="nav-btn" id="tab-grp" onclick="switchTab('grp')" title="Группы">
+      👥<span class="nav-label">Группы</span>
+    </button>
+    <button class="nav-btn" id="tab-ch" onclick="switchTab('ch')" title="Каналы">
+      📢<span class="nav-label">Каналы</span>
+    </button>
+    <button class="nav-btn" id="tab-notif" onclick="switchTab('notif')" title="Уведомления">
+      🔔<span class="nav-label">Уведом.</span>
+      <span class="nav-badge" id="notif-badge">0</span>
+    </button>
+    <div class="nav-spacer"></div>
+  </nav>
+
+  <!-- SIDEBAR (list panel) -->
   <div class="sidebar">
-    <div class="sb-head">
-      <button class="my-av" id="my-av" onclick="openProf()">🙂</button>
-      <div class="my-info">
-        <div class="my-name" id="my-name">—</div>
-        <div class="my-stat" id="my-stat">Нажми на аватар → профиль</div>
-      </div>
-      <div class="dot"></div>
-    </div>
-    <div class="sb-tabs">
-      <div class="sb-tab active" id="tab-dm" onclick="switchTab('dm')">💬 Чаты</div>
-      <div class="sb-tab" id="tab-grp" onclick="switchTab('grp')">👥 Группы</div>
-      <div class="sb-tab" id="tab-notif" onclick="switchTab('notif')">🔔<span class="tab-badge" id="notif-badge" style="display:none">0</span></div>
-      <div class="sb-tab" id="tab-ch" onclick="switchTab('ch')">📢</div>
-    </div>
     <div class="sb-search" id="sb-search"><input type="text" placeholder="Поиск..." id="search" oninput="filterList()"></div>
     <div class="user-list" id="user-list"></div>
     <div class="notif-list" id="notif-list" style="display:none"></div>
@@ -543,6 +570,7 @@ let readStatuses={}; // {msg_id: bool}
 let groupLastTs={}; // {gid: ts}
 let currentTab='dm';
 let grpMembers=[];
+let pendingRequests=[];
 
 const EMOJIS=['🙂','😎','🤖','👾','🦊','🐱','🐸','🦁','🐼','🦋','🌙','⚡','🔥','💎','🛸','🎭','🧠','👻','🦄','🌊','🎯','🚀','💫','🎪'];
 
@@ -573,7 +601,8 @@ async function doLogin(){
         setInterval(pollChannelPosts,2000);
         setTimeout(initPushNotifications,2000);
         heartbeat();
-        refreshAll(); // сразу показываем пользователей
+        refreshAll();
+        pollRequests();
     }catch(e){err.innerText='Ошибка сети'}
 }
 
@@ -587,9 +616,12 @@ async function loadMyProfile(){
     try{const r=await fetch(`/profile/${myId}`);if(r.ok)myProfile=await r.json()}catch(e){}
 }
 function updateSidebar(){
-    document.getElementById('my-av').innerText=myProfile.avatar||'🙂';
-    document.getElementById('my-name').innerText=myProfile.display_name||myId;
-    document.getElementById('my-stat').innerText=myProfile.status||'Нажми на аватар → профиль';
+    const av=document.getElementById('my-av');
+    if(av) av.innerText=myProfile.avatar||'🙂';
+    const nm=document.getElementById('my-name');
+    if(nm) nm.innerText=myProfile.display_name||myId;
+    const st=document.getElementById('my-stat');
+    if(st) st.innerText=myProfile.status||'';
 }
 function buildAvGrid(){
     const g=document.getElementById('av-grid');g.innerHTML='';
@@ -613,15 +645,18 @@ async function saveProf(){const isPrivate=document.getElementById('pf-private').
 // ── Tabs ─────────────────────────────────────────────────────
 function switchTab(tab){
     currentTab=tab;
-    const tabs=['dm','grp','notif','ch'];
-    tabs.forEach(t=>{
+    ['dm','grp','notif','ch'].forEach(t=>{
         const el=document.getElementById('tab-'+t);
         if(el) el.classList.toggle('active',t===tab);
     });
-    document.getElementById('user-list').style.display=(tab==='notif'||tab==='ch')?'none':'';
-    document.getElementById('notif-list').style.display=tab==='notif'?'flex':'none';
-    document.getElementById('ch-list').style.display=tab==='ch'?'block':'none';
-    document.getElementById('sb-search').style.display=(tab==='notif'||tab==='ch')?'none':'';
+    const ul=document.getElementById('user-list');
+    const nl=document.getElementById('notif-list');
+    const cl=document.getElementById('ch-list');
+    const ss=document.getElementById('sb-search');
+    ul.style.display=(tab==='notif'||tab==='ch')?'none':'block';
+    nl.style.display=tab==='notif'?'flex':'none';
+    cl.style.display=tab==='ch'?'block':'none';
+    ss.style.display=(tab==='notif')?'none':'block';
     if(tab==='notif') renderNotifications();
     else if(tab==='ch') renderChannelList();
     else filterList();
@@ -922,12 +957,14 @@ async function sendMsg(){
         body.to=targetId;
         const r=await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
         const d=await r.json();
-        // Обновляем optimistic id
         const el=document.querySelector(`[data-msg-id="${optimisticId}"]`);
         if(el&&d.msg_id){el.dataset.msgId=d.msg_id;const b=el.querySelector('.bubble');if(b)b.dataset.msgId=d.msg_id;}
-    } else {
-        body.to=targetId;
+    } else if(targetType==='group'){
         await fetch(`/group/${targetId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text,reply_to:reply})});
+    } else if(targetType==='channel'){
+        await fetch(`/channel/${targetId}/post`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text})});
+        // Poll immediately to show new post
+        setTimeout(pollChannelPosts,300);
     }
 }
 
@@ -1107,8 +1144,6 @@ async function respondToRequest(reqId, action){
     }catch(e){}
 }
 
-let pendingRequests = [];
-
 async function pollRequests(){
     if(!myId) return;
     try{
@@ -1117,7 +1152,7 @@ async function pollRequests(){
         // Update badge
         const badge=document.getElementById('notif-badge');
         if(pendingRequests.length>0){
-            badge.style.display='inline-flex';
+            badge.style.display='flex';
             badge.innerText=pendingRequests.length;
         } else {
             badge.style.display='none';
