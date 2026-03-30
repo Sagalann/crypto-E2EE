@@ -201,7 +201,8 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .reaction-count{font-size:.75em;font-weight:600;color:var(--txt2)}
 .reaction.mine .reaction-count{color:var(--accent)}
 /* emoji picker */
-.emoji-picker{position:absolute;bottom:44px;right:0;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:14px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:auto;max-width:320px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .15s ease}
+.emoji-picker{position:fixed;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:14px;padding:6px 8px;display:flex;flex-direction:row;flex-wrap:nowrap;gap:2px;width:auto;max-width:calc(100vw - 24px);overflow-x:auto;overflow-y:hidden;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .15s ease;scrollbar-width:none;-ms-overflow-style:none}
+.emoji-picker::-webkit-scrollbar{display:none}
 .emoji-picker span{font-size:1.3em;cursor:pointer;padding:4px;border-radius:7px;transition:.1s;line-height:1}
 .emoji-picker span:hover{background:var(--glass-h);transform:scale(1.2)}
 .emoji-trigger{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:.9em;opacity:.6;transition:.15s;flex-shrink:0}
@@ -499,6 +500,17 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
     /* Add top safe area to sidebar */
     .sidebar{padding-top:env(safe-area-inset-top)}
     .chat{padding-top:env(safe-area-inset-top)}
+    /* Settings dropdown on mobile — above bottom nav, centered */
+    .settings-dropdown{
+        bottom:calc(58px + env(safe-area-inset-bottom));
+        left:50%;
+        transform:translateX(-50%) translateY(4px) scale(0.95);
+    }
+    .settings-dropdown.open{
+        transform:translateX(-50%) translateY(0) scale(1);
+    }
+    /* Settings wrap on mobile doesn't need relative positioning trick */
+    .nav-settings-wrap{position:static}
 }
 
 
@@ -2229,21 +2241,20 @@ function showEmojiPicker(e, msgId, rbar, mine){
     picker.appendChild(quick);
     // Position relative to button
     const btnRect=e.target.getBoundingClientRect();
-    // Smart position — show above or below depending on space
-    const spaceAbove=btnRect.top;
-    const spaceBelow=window.innerHeight-btnRect.bottom;
-    const pickerH=260; // approximate picker height
+    const pickerH=52;
     picker.style.position='fixed';
-    if(spaceAbove>pickerH || spaceAbove>spaceBelow){
-        // Show above
+    if(btnRect.top > pickerH + 10){
         picker.style.bottom=(window.innerHeight-btnRect.top+6)+'px';
         picker.style.top='auto';
     } else {
-        // Show below
         picker.style.top=(btnRect.bottom+6)+'px';
         picker.style.bottom='auto';
     }
-    picker.style.left=Math.min(Math.max(btnRect.left-100, 8), window.innerWidth-260)+'px';
+    // Center on button, clamp to screen edges
+    const pickerW=Math.min(window.innerWidth-16, 340);
+    const idealLeft=btnRect.left+btnRect.width/2-pickerW/2;
+    picker.style.left=Math.max(8,Math.min(idealLeft,window.innerWidth-pickerW-8))+'px';
+    picker.style.width=pickerW+'px';
     document.body.appendChild(picker);
     activeEmojiPicker=picker;
     // Close on outside click
