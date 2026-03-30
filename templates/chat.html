@@ -206,6 +206,55 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .emoji-picker span{font-size:1.3em;cursor:pointer;padding:4px;border-radius:7px;transition:.1s;line-height:1}
 .emoji-picker span:hover{background:var(--glass-h);transform:scale(1.2)}
 .emoji-trigger{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:.9em;opacity:.6;transition:.15s;flex-shrink:0}
+
+/* ── Audio message ── */
+.audio-msg{display:flex;align-items:center;gap:8px;padding:6px 4px;min-width:180px;max-width:240px}
+.audio-play-btn{width:34px;height:34px;border-radius:50%;background:var(--accent);border:none;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.audio-play-btn:hover{opacity:.85}
+.audio-wave{flex:1;height:28px;cursor:pointer;position:relative}
+.audio-wave canvas{width:100%;height:100%}
+.audio-duration{font-size:.72em;color:var(--txt2);min-width:32px;text-align:right;flex-shrink:0}
+
+/* ── Call button in input bar ── */
+.call-btns{display:flex;gap:4px;align-items:center}
+.call-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--glass);color:var(--txt2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.call-btn:hover{background:rgba(59,158,255,.2);color:var(--accent)}
+.mic-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--glass);color:var(--txt2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.mic-btn:hover{background:rgba(59,158,255,.2);color:var(--accent)}
+.mic-btn.recording{background:rgba(255,80,80,.2);color:#ff5050;animation:pulse-rec 1s infinite}
+@keyframes pulse-rec{0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,.4)}50%{box-shadow:0 0 0 6px rgba(255,80,80,0)}}
+
+/* ── Incoming call overlay ── */
+.call-overlay{position:fixed;inset:0;background:rgba(6,13,31,.92);backdrop-filter:blur(18px);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;pointer-events:none;transition:opacity .25s}
+.call-overlay.active{opacity:1;pointer-events:all}
+.call-av-big{width:90px;height:90px;border-radius:26px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 0 0 8px rgba(59,158,255,.15),0 0 0 16px rgba(59,158,255,.07);animation:call-pulse 1.8s infinite}
+@keyframes call-pulse{0%,100%{box-shadow:0 0 0 8px rgba(59,158,255,.15),0 0 0 16px rgba(59,158,255,.07)}50%{box-shadow:0 0 0 12px rgba(59,158,255,.2),0 0 0 22px rgba(59,158,255,.05)}}
+.call-name{font-size:1.4em;font-weight:700;color:var(--txt)}
+.call-status-txt{font-size:.9em;color:var(--txt2)}
+.call-actions{display:flex;gap:24px;margin-top:10px}
+.call-action-btn{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s}
+.call-action-btn:hover{transform:scale(1.08)}
+.call-accept{background:#22c55e;color:white}
+.call-reject{background:#ef4444;color:white}
+.call-end{background:#ef4444;color:white}
+.call-mute{background:var(--glass);color:var(--txt);border:1px solid var(--glass-b)}
+.call-mute.active{background:rgba(255,80,80,.2);color:#ff5050}
+.call-cam{background:var(--glass);color:var(--txt);border:1px solid var(--glass-b)}
+.call-cam.active{background:rgba(255,80,80,.2);color:#ff5050}
+.call-share{background:var(--glass);color:var(--txt);border:1px solid var(--glass-b)}
+.call-share.active{background:rgba(59,158,255,.2);color:var(--accent)}
+
+/* ── Active call window ── */
+.call-window{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.call-window.active{opacity:1;pointer-events:all}
+.call-videos{position:relative;width:100%;flex:1;display:flex;align-items:center;justify-content:center}
+#call-remote-video{width:100%;height:100%;object-fit:cover;background:#111}
+#call-local-video{position:absolute;bottom:16px;right:16px;width:100px;height:140px;object-fit:cover;border-radius:14px;border:2px solid rgba(255,255,255,.2);background:#222;z-index:2}
+.call-audio-ui{display:flex;flex-direction:column;align-items:center;gap:16px;color:white}
+.call-audio-av{width:110px;height:110px;border-radius:30px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:60px}
+.call-timer{font-size:1.1em;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums}
+.call-bar{position:absolute;bottom:0;left:0;right:0;padding:20px;display:flex;justify-content:center;gap:16px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+
 .emoji-trigger:hover{opacity:1;background:var(--glass-h)}
 /* ── Deleted / edited message ── */
 .msg-deleted{color:var(--txt2)!important;font-style:italic;opacity:.6}
@@ -694,10 +743,66 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
     <div class="inp-bar">
       <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикрепить файл">📎</button>
       <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)">
-      <input type="text" id="msg-in" placeholder="Сообщение...">
+      <button class="mic-btn" id="mic-btn" onclick="toggleRecording()" title="Голосовое сообщение">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <input type="text" id="msg-in" placeholder="Сообщение..." oninput="toggleMicSend()">
       <button class="emoji-trigger" onclick="showInputEmojiPicker(this,'msg-in')" style="font-size:1.1em;padding:6px 9px;opacity:.7" title="Эмодзи">😊</button>
+      <div class="call-btns" id="call-btns" style="display:none">
+        <button class="call-btn" id="btn-voice-call" onclick="startCall('audio')" title="Голосовой звонок">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
+        <button class="call-btn" id="btn-video-call" onclick="startCall('video')" title="Видеозвонок">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </button>
+        <button class="call-btn" id="btn-screen-call" onclick="startCall('screen')" title="Демонстрация экрана">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+      </div>
       <button class="send-btn" onclick="sendMsg()">➤</button>
     </div>
+  </div>
+</div>
+
+<!-- INCOMING CALL OVERLAY -->
+<div class="call-overlay" id="incoming-call-overlay">
+  <div class="call-av-big" id="incoming-call-av">🙂</div>
+  <div class="call-name" id="incoming-call-name">Неизвестный</div>
+  <div class="call-status-txt" id="incoming-call-type">Входящий звонок...</div>
+  <div class="call-actions">
+    <button class="call-action-btn call-reject" onclick="rejectCall()" title="Отклонить">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A2 2 0 0 1 10.68 13.31z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </button>
+    <button class="call-action-btn call-accept" onclick="acceptCall()" title="Принять">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ACTIVE CALL WINDOW -->
+<div class="call-window" id="call-window">
+  <div class="call-videos" id="call-videos-wrap" style="display:none">
+    <video id="call-remote-video" autoplay playsinline></video>
+    <video id="call-local-video" autoplay playsinline muted></video>
+  </div>
+  <div class="call-audio-ui" id="call-audio-ui">
+    <div class="call-audio-av" id="call-audio-av">🙂</div>
+    <div class="call-name" id="call-peer-name">—</div>
+    <div class="call-timer" id="call-timer">00:00</div>
+  </div>
+  <div class="call-bar">
+    <button class="call-action-btn call-mute" id="btn-mute" onclick="toggleMute()" title="Микрофон">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <button class="call-action-btn call-cam" id="btn-cam" onclick="toggleCam()" title="Камера" style="display:none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    </button>
+    <button class="call-action-btn call-share" id="btn-share" onclick="toggleScreen()" title="Экран" style="display:none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </button>
+    <button class="call-action-btn call-end" onclick="endCall()" title="Завершить">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A2 2 0 0 1 10.68 13.31z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </button>
   </div>
 </div>
 
@@ -1221,6 +1326,9 @@ async function openDM(u,av,nm){
         blockedView.style.display='none';
         messagesView.style.display='flex';
         if(inpBar) inpBar.style.display='flex';
+        // Show call buttons for DM (not bot)
+        const callBtns=document.getElementById('call-btns');
+        if(callBtns) callBtns.style.display=(u!=='Crypto_Assistor'?'flex':'none');
     }catch(e){}
 
     try{
@@ -1252,6 +1360,8 @@ async function openGroup(gid,g){
     document.getElementById('e2ee-badge').style.display='none';
     document.getElementById('messages').innerHTML='';
     cancelReply();
+    const callBtns=document.getElementById('call-btns');
+    if(callBtns) callBtns.style.display='none';
     groupLastTs[gid]=0;
     const loadingGid=gid;
     try{
@@ -1727,6 +1837,78 @@ async function loadFileInfo(fileId,fb){
             };
             // Вставляем вместо file-bubble
             fb.replaceWith(img);
+            return;
+        }
+        // Аудио — голосовое сообщение с плеером
+        if(d.mime&&(d.mime.startsWith('audio/')||d.name==='voice.webm')){
+            const wrap=document.createElement('div');
+            wrap.className='audio-msg';
+            const audioEl=new Audio('data:'+d.mime+';base64,'+d.data);
+            let playing=false, timerInt=null;
+            const playBtn=document.createElement('button');
+            playBtn.className='audio-play-btn';
+            playBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+            const waveWrap=document.createElement('div');
+            waveWrap.style.cssText='flex:1;height:26px;position:relative;cursor:pointer;';
+            const waveBar=document.createElement('div');
+            waveBar.style.cssText='position:absolute;inset:0;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.22;';
+            const progress=document.createElement('div');
+            progress.style.cssText='position:absolute;top:0;left:0;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.7;width:0%;transition:width .1s linear;';
+            waveWrap.appendChild(waveBar);waveWrap.appendChild(progress);
+            const durEl=document.createElement('div');
+            durEl.className='audio-duration';
+            durEl.innerText='0:00';
+            audioEl.onloadedmetadata=()=>{if(isFinite(audioEl.duration))durEl.innerText=fmtDur(audioEl.duration);};
+            audioEl.ontimeupdate=()=>{
+                if(audioEl.duration)progress.style.width=(audioEl.currentTime/audioEl.duration*100)+'%';
+                durEl.innerText=fmtDur(audioEl.currentTime);
+            };
+            audioEl.onended=()=>{
+                playing=false;
+                playBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+                progress.style.width='0%';
+                durEl.innerText=fmtDur(audioEl.duration);
+            };
+            playBtn.onclick=()=>{
+                if(playing){audioEl.pause();playing=false;playBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';}
+                else{audioEl.play();playing=true;playBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
+            };
+            waveWrap.onclick=(e)=>{
+                const rect=waveWrap.getBoundingClientRect();
+                const ratio=(e.clientX-rect.left)/rect.width;
+                audioEl.currentTime=ratio*audioEl.duration;
+            };
+            wrap.appendChild(playBtn);wrap.appendChild(waveWrap);wrap.appendChild(durEl);
+            fb.replaceWith(wrap);
+            return;
+        }
+        // Видео — превью с кнопкой воспроизведения
+        if(d.mime&&d.mime.startsWith('video/')){
+            const wrap=document.createElement('div');
+            wrap.style.cssText='position:relative;display:inline-block;cursor:pointer;border-radius:12px;overflow:hidden;max-width:240px;';
+            const vid=document.createElement('video');
+            vid.src='data:'+d.mime+';base64,'+d.data;
+            vid.style.cssText='max-width:240px;max-height:200px;display:block;object-fit:cover;border-radius:12px;';
+            vid.preload='metadata';
+            const playBtn=document.createElement('div');
+            playBtn.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);border-radius:12px;transition:.15s;pointer-events:none;';
+            playBtn.innerHTML='<div style="width:44px;height:44px;background:rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;padding-left:3px;">▶</div>';
+            wrap.appendChild(vid);wrap.appendChild(playBtn);
+            wrap.onclick=()=>{
+                const ov=document.createElement('div');
+                ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                const bigV=document.createElement('video');
+                bigV.src=vid.src;bigV.controls=true;bigV.autoplay=true;
+                bigV.style.cssText='max-width:92vw;max-height:88vh;border-radius:12px;';
+                const closeBtn=document.createElement('div');
+                closeBtn.style.cssText='position:absolute;top:16px;right:20px;color:white;font-size:2em;cursor:pointer;line-height:1;';
+                closeBtn.innerText='×';
+                closeBtn.onclick=()=>{bigV.pause();ov.remove();};
+                ov.appendChild(bigV);ov.appendChild(closeBtn);
+                ov.onclick=(e)=>{if(e.target===ov){bigV.pause();ov.remove();}};
+                document.body.appendChild(ov);
+            };
+            fb.replaceWith(wrap);
             return;
         }
         fb.dataset.fileData=JSON.stringify(d);
@@ -2420,6 +2602,322 @@ document.getElementById('login-pass').onkeypress=e=>{if(e.key==='Enter')doLogin(
 document.getElementById('login-pass2').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 // Try auto-login from saved session
 tryAutoLogin();
+
+// ══════════════════════════════════════════════════════
+// 🎤 AUDIO MESSAGES
+// ══════════════════════════════════════════════════════
+let mediaRecorder=null, audioChunks=[], isRecording=false;
+
+function toggleMicSend(){
+    const val=document.getElementById('msg-in').value.trim();
+    const mic=document.getElementById('mic-btn');
+    const send=document.querySelector('.chat .send-btn');
+    if(val){
+        if(mic) mic.style.display='none';
+        if(send) send.style.display='flex';
+    } else {
+        if(mic) mic.style.display='flex';
+        if(send) send.style.display='flex';
+    }
+}
+
+async function toggleRecording(){
+    if(isRecording){ stopRecording(); return; }
+    if(!targetId||targetType!=='dm') return;
+    try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        audioChunks=[];
+        mediaRecorder=new MediaRecorder(stream,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm'});
+        mediaRecorder.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
+        mediaRecorder.onstop=async()=>{
+            stream.getTracks().forEach(t=>t.stop());
+            const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType});
+            if(blob.size<500){return;}
+            await sendAudioMessage(blob, mediaRecorder.mimeType);
+        };
+        mediaRecorder.start();
+        isRecording=true;
+        const btn=document.getElementById('mic-btn');
+        btn.classList.add('recording');
+        btn.title='Остановить запись';
+    }catch(e){
+        alert('Нет доступа к микрофону');
+    }
+}
+
+function stopRecording(){
+    if(mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
+    isRecording=false;
+    const btn=document.getElementById('mic-btn');
+    btn.classList.remove('recording');
+    btn.title='Голосовое сообщение';
+}
+
+async function sendAudioMessage(blob, mime){
+    try{
+        const fd=new FormData();
+        fd.append('file', blob, 'voice.webm');
+        fd.append('user_id', myId);
+        const r=await fetch('/upload',{method:'POST',body:fd});
+        const d=await r.json();
+        if(!d.file_id) return;
+        // Send as file message
+        const body={from:myId, to:targetId, message:'[voice]', file_id:d.file_id};
+        const sr=await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const sd=await sr.json();
+        if(sd.msg_id) addBubble(myId,'[voice]',true,'messages',sd.msg_id,null,false,d.file_id,false,false);
+    }catch(e){console.error('Audio send error:',e);}
+}
+
+// Render audio message bubble
+function renderAudioBubble(fb, fileId, mime, data){
+    const wrap=document.createElement('div');
+    wrap.className='audio-msg';
+    const audio=new Audio('data:'+mime+';base64,'+data);
+    let playing=false, timerInterval=null;
+    const playBtn=document.createElement('button');
+    playBtn.className='audio-play-btn';
+    playBtn.innerHTML='▶';
+    const dur=document.createElement('div');
+    dur.className='audio-duration';
+    dur.innerText='0:00';
+    audio.onloadedmetadata=()=>{
+        if(isFinite(audio.duration)) dur.innerText=fmtDur(audio.duration);
+    };
+    audio.onended=()=>{playing=false;playBtn.innerHTML='▶';dur.innerText=fmtDur(audio.duration);clearInterval(timerInterval);};
+    playBtn.onclick=()=>{
+        if(playing){audio.pause();playing=false;playBtn.innerHTML='▶';clearInterval(timerInterval);}
+        else{audio.play();playing=true;playBtn.innerHTML='⏸';
+            timerInterval=setInterval(()=>{if(!isNaN(audio.duration))dur.innerText=fmtDur(audio.currentTime)+' / '+fmtDur(audio.duration);},200);}
+    };
+    // Waveform canvas placeholder
+    const wave=document.createElement('div');
+    wave.className='audio-wave';
+    wave.style.cssText='flex:1;height:28px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 100%);border-radius:4px;opacity:.25';
+    wrap.appendChild(playBtn);wrap.appendChild(wave);wrap.appendChild(dur);
+    fb.replaceWith(wrap);
+}
+function fmtDur(s){const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+(ss<10?'0':'')+ss;}
+
+// ══════════════════════════════════════════════════════
+// 📞 WEBRTC CALLS
+// ══════════════════════════════════════════════════════
+const ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+let pc=null, localStream=null, callId=null, callRole=null; // role: caller | callee
+let callTimerInterval=null, callSeconds=0;
+let isMuted=false, isCamOff=false, isScreenSharing=false;
+let callPollInterval=null;
+let incomingCallId=null, incomingCallType=null;
+
+async function startCall(type){
+    if(!targetId||targetType!=='dm') return;
+    if(pc){alert('Звонок уже активен');return;}
+    try{
+        localStream=await getLocalStream(type);
+    }catch(e){alert('Нет доступа к камере/микрофону: '+e.message);return;}
+    pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    setupRemoteVideo(type);
+    const offer=await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    // Send offer to server
+    const r=await fetch('/call/offer',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({from:myId,to:targetId,call_type:type,sdp:JSON.stringify(pc.localDescription)})});
+    const d=await r.json();
+    callId=d.call_id; callRole='caller';
+    // ICE candidates
+    pc.onicecandidate=async e=>{
+        if(e.candidate) await fetch('/call/ice',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,call_id:callId,candidate:JSON.stringify(e.candidate)})});
+    };
+    showCallWindow(type, targetId, false);
+    startCallPoller();
+}
+
+async function acceptCall(){
+    const overlay=document.getElementById('incoming-call-overlay');
+    overlay.classList.remove('active');
+    const type=incomingCallType||'audio';
+    try{
+        localStream=await getLocalStream(type);
+    }catch(e){alert('Нет доступа к устройствам: '+e.message);rejectCall();return;}
+    pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+    localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    setupRemoteVideo(type);
+    // Poll for offer
+    const pollR=await fetch(`/call/poll?user_id=${myId}&call_id=${incomingCallId}`).then(r=>r.json());
+    if(pollR.offer){
+        await pc.setRemoteDescription(JSON.parse(pollR.offer));
+        const answer=await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await fetch('/call/answer',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,call_id:incomingCallId,action:'accept',sdp:JSON.stringify(pc.localDescription)})});
+    }
+    pc.onicecandidate=async e=>{
+        if(e.candidate) await fetch('/call/ice',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,call_id:incomingCallId,candidate:JSON.stringify(e.candidate)})});
+    };
+    callId=incomingCallId; callRole='callee';
+    showCallWindow(type, null, true);
+    startCallPoller();
+}
+
+async function rejectCall(){
+    document.getElementById('incoming-call-overlay').classList.remove('active');
+    if(incomingCallId){
+        await fetch('/call/answer',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,call_id:incomingCallId,action:'reject'})});
+    }
+    incomingCallId=null; incomingCallType=null;
+}
+
+async function endCall(){
+    if(callId) await fetch('/call/end',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({user_id:myId,call_id:callId})});
+    cleanupCall();
+}
+
+function cleanupCall(){
+    if(pc){pc.close();pc=null;}
+    if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
+    if(callPollInterval){clearInterval(callPollInterval);callPollInterval=null;}
+    if(callTimerInterval){clearInterval(callTimerInterval);callTimerInterval=null;}
+    callId=null; callRole=null; callSeconds=0; isMuted=false; isCamOff=false; isScreenSharing=false;
+    document.getElementById('call-window').classList.remove('active');
+    document.getElementById('call-videos-wrap').style.display='none';
+    document.getElementById('call-audio-ui').style.display='flex';
+    const rv=document.getElementById('call-remote-video');
+    if(rv){rv.srcObject=null;}
+    const lv=document.getElementById('call-local-video');
+    if(lv){lv.srcObject=null;}
+}
+
+async function getLocalStream(type){
+    if(type==='screen'){
+        const screen=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+        return screen;
+    }
+    if(type==='video') return await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+    return await navigator.mediaDevices.getUserMedia({audio:true});
+}
+
+function setupRemoteVideo(type){
+    pc.ontrack=e=>{
+        const rv=document.getElementById('call-remote-video');
+        if(!rv.srcObject) rv.srcObject=e.streams[0];
+    };
+    if(type==='video'||type==='screen'){
+        const lv=document.getElementById('call-local-video');
+        lv.srcObject=localStream;
+    }
+}
+
+function showCallWindow(type, peerId, isCallee){
+    const win=document.getElementById('call-window');
+    win.classList.add('active');
+    const isVideo=(type==='video'||type==='screen');
+    document.getElementById('call-videos-wrap').style.display=isVideo?'flex':'none';
+    document.getElementById('call-audio-ui').style.display=isVideo?'none':'flex';
+    document.getElementById('btn-cam').style.display=type==='video'?'flex':'none';
+    document.getElementById('btn-share').style.display=(type==='video'||type==='screen')?'flex':'none';
+    // Set peer info for audio UI
+    const pid=peerId||(incomingCallId?document.getElementById('incoming-call-name').innerText:targetId);
+    const prof=allProfiles[pid]||{};
+    document.getElementById('call-audio-av').innerText=prof.avatar||'🙂';
+    document.getElementById('call-peer-name').innerText=prof.display_name||pid||'...';
+    document.getElementById('call-timer').innerText='00:00';
+    // Start timer
+    callSeconds=0;
+    callTimerInterval=setInterval(()=>{
+        callSeconds++;
+        const m=String(Math.floor(callSeconds/60)).padStart(2,'0');
+        const s=String(callSeconds%60).padStart(2,'0');
+        document.getElementById('call-timer').innerText=m+':'+s;
+    },1000);
+}
+
+function startCallPoller(){
+    callPollInterval=setInterval(async()=>{
+        if(!callId) return;
+        try{
+            const d=await fetch(`/call/poll?user_id=${myId}&call_id=${callId}`).then(r=>r.json());
+            if(d.event==='ended'||d.event==='rejected'){cleanupCall();return;}
+            if(d.event==='active'&&callRole==='caller'&&d.answer&&pc.signalingState==='have-local-offer'){
+                await pc.setRemoteDescription(JSON.parse(d.answer));
+            }
+            // Apply ICE candidates
+            if(d.ice&&d.ice.length&&pc){
+                for(const ic of d.ice){
+                    try{await pc.addIceCandidate(JSON.parse(ic));}catch(e){}
+                }
+            }
+        }catch(e){}
+    },1500);
+}
+
+// Poll for incoming calls
+let incomingPollInterval=null;
+function startIncomingCallPoller(){
+    incomingPollInterval=setInterval(async()=>{
+        if(!myId||callId) return;
+        try{
+            const d=await fetch(`/call/poll?user_id=${myId}`).then(r=>r.json());
+            if(d.event==='incoming'&&d.call_id){
+                incomingCallId=d.call_id;
+                incomingCallType=d.call_type||'audio';
+                document.getElementById('incoming-call-av').innerText=d.avatar||'🙂';
+                document.getElementById('incoming-call-name').innerText=d.display_name||d.from;
+                const typeMap={audio:'📞 Голосовой звонок',video:'📹 Видеозвонок',screen:'🖥️ Демонстрация экрана'};
+                document.getElementById('incoming-call-type').innerText=typeMap[incomingCallType]||'Входящий звонок';
+                document.getElementById('incoming-call-overlay').classList.add('active');
+            }
+        }catch(e){}
+    },2000);
+}
+
+function toggleMute(){
+    if(!localStream) return;
+    isMuted=!isMuted;
+    localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+    document.getElementById('btn-mute').classList.toggle('active',isMuted);
+}
+function toggleCam(){
+    if(!localStream) return;
+    isCamOff=!isCamOff;
+    localStream.getVideoTracks().forEach(t=>t.enabled=!isCamOff);
+    document.getElementById('btn-cam').classList.toggle('active',isCamOff);
+}
+async function toggleScreen(){
+    if(!pc) return;
+    if(isScreenSharing){
+        // Switch back to camera
+        try{
+            const camStream=await navigator.mediaDevices.getUserMedia({video:true});
+            const videoTrack=camStream.getVideoTracks()[0];
+            const sender=pc.getSenders().find(s=>s.track&&s.track.kind==='video');
+            if(sender) await sender.replaceTrack(videoTrack);
+            document.getElementById('call-local-video').srcObject=camStream;
+            isScreenSharing=false;
+            document.getElementById('btn-share').classList.remove('active');
+        }catch(e){}
+    } else {
+        try{
+            const screenStream=await navigator.mediaDevices.getDisplayMedia({video:true});
+            const screenTrack=screenStream.getVideoTracks()[0];
+            const sender=pc.getSenders().find(s=>s.track&&s.track.kind==='video');
+            if(sender) await sender.replaceTrack(screenTrack);
+            document.getElementById('call-local-video').srcObject=screenStream;
+            isScreenSharing=true;
+            document.getElementById('btn-share').classList.add('active');
+            screenTrack.onended=()=>toggleScreen();
+        }catch(e){}
+    }
+}
+
+// Start incoming call poller after login
+const _origStartPolling2=startPolling;
+window.startPolling=function(){_origStartPolling2();startIncomingCallPoller();}
+
 </script>
 </body>
 </html>

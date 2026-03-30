@@ -635,6 +635,115 @@ def vapid_key():
 # ── Reactions ──────────────────────────────────────────────
 reactions = {}  # { msg_id: { emoji: [uid, ...] } }
 
+# ── WebRTC Signaling ───────────────────────────────────────
+call_sessions = {}  # { call_id: {from, to, type, status, offer, answer, ice_from, ice_to, ts} }
+
+@app.post('/call/offer')
+def call_offer():
+    data   = request.json
+    caller = data.get('from','')
+    callee = data.get('to','')
+    ctype  = data.get('call_type','audio')  # audio | video | screen
+    sdp    = data.get('sdp','')
+    if caller not in user_keys or callee not in users:
+        return jsonify({'error':'invalid'}), 400
+    touch(caller)
+    call_id = str(uuid.uuid4())
+    call_sessions[call_id] = {
+        'from': caller, 'to': callee, 'type': ctype,
+        'status': 'ringing', 'offer': sdp, 'answer': None,
+        'ice_from': [], 'ice_to': [], 'ts': time.time()
+    }
+    p = profiles.get(caller, {})
+    push_notif(callee, 'incoming_call',
+               f"{p.get('display_name', caller)} звонит вам",
+               {'from': caller, 'call_id': call_id, 'call_type': ctype,
+                'avatar': p.get('avatar','🙂')})
+    return jsonify({'status':'ok', 'call_id': call_id})
+
+@app.post('/call/answer')
+def call_answer():
+    data    = request.json
+    uid     = data.get('user_id','')
+    call_id = data.get('call_id','')
+    action  = data.get('action','')  # accept | reject
+    sdp     = data.get('sdp','')
+    sess    = call_sessions.get(call_id)
+    if not sess or sess['to'] != uid:
+        return jsonify({'error':'not found'}), 404
+    touch(uid)
+    if action == 'accept':
+        sess['status'] = 'active'
+        sess['answer'] = sdp
+    else:
+        sess['status'] = 'rejected'
+    return jsonify({'status':'ok'})
+
+@app.post('/call/ice')
+def call_ice():
+    data      = request.json
+    uid       = data.get('user_id','')
+    call_id   = data.get('call_id','')
+    candidate = data.get('candidate','')
+    sess      = call_sessions.get(call_id)
+    if not sess: return jsonify({'error':'not found'}), 404
+    touch(uid)
+    if uid == sess['from']:
+        sess['ice_from'].append(candidate)
+    else:
+        sess['ice_to'].append(candidate)
+    return jsonify({'status':'ok'})
+
+@app.post('/call/end')
+def call_end():
+    data    = request.json
+    uid     = data.get('user_id','')
+    call_id = data.get('call_id','')
+    sess    = call_sessions.get(call_id)
+    if sess and uid in [sess['from'], sess['to']]:
+        sess['status'] = 'ended'
+        touch(uid)
+    return jsonify({'status':'ok'})
+
+@app.get('/call/poll')
+def call_poll():
+    uid     = request.args.get('user_id','')
+    call_id = request.args.get('call_id','')
+    if not uid: return jsonify({'error':'invalid'}), 400
+    touch(uid)
+    # Check for incoming call
+    if not call_id:
+        for cid, sess in list(call_sessions.items()):
+            if sess['to'] == uid and sess['status'] == 'ringing' and time.time()-sess['ts'] < 60:
+                p = profiles.get(sess['from'], {})
+                return jsonify({
+                    'event': 'incoming',
+                    'call_id': cid,
+                    'from': sess['from'],
+                    'call_type': sess['type'],
+                    'display_name': p.get('display_name', sess['from']),
+                    'avatar': p.get('avatar','🙂')
+                })
+        return jsonify({'event': 'none'})
+    sess = call_sessions.get(call_id)
+    if not sess: return jsonify({'event':'ended'})
+    if sess['status'] == 'ended' or sess['status'] == 'rejected':
+        return jsonify({'event': sess['status']})
+    if sess['status'] == 'active' and uid == sess['from']:
+        ice = sess['ice_to'].copy(); sess['ice_to'] = []
+        return jsonify({'event':'active', 'answer': sess['answer'], 'ice': ice})
+    if sess['status'] in ['ringing','active'] and uid == sess['to']:
+        ice = sess['ice_from'].copy(); sess['ice_from'] = []
+        return jsonify({'event': sess['status'], 'offer': sess['offer'], 'ice': ice,
+                        'call_type': sess['type']})
+    ice = []
+    if uid == sess['from']:
+        ice = sess['ice_to'].copy(); sess['ice_to'] = []
+    else:
+        ice = sess['ice_from'].copy(); sess['ice_from'] = []
+    return jsonify({'event': sess['status'], 'ice': ice})
+
+
 @app.post('/react')
 def add_reaction():
     data   = request.json
