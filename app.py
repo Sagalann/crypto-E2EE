@@ -26,6 +26,7 @@ last_seen   = {}   # { uid: timestamp }
 groups      = {}   # { gid: {name, avatar, members, created_by} }
 group_msgs  = {}   # { gid: [{id, from, text, ts, reply_to, file_id}] }
 files_store = {}   # { fid: {name, mime, data, uploaded_by, ts} }
+chat_requests = {} # { to_uid: [{id, from, ts, status: pending/accepted/rejected}] }
 
 bot_priv, bot_pub = generate_identity_keypair()
 users[BOT_ID]    = b64_encode_key(bot_pub)
@@ -53,7 +54,7 @@ def login():
         passwords[uid]=pwh
         priv,pub=generate_identity_keypair()
         user_keys[uid]=b64_encode_key(priv); users[uid]=b64_encode_key(pub)
-        messages[uid]=[]; profiles[uid]={"display_name":uid,"avatar":"🙂","status":"","theme":"dark"}
+        messages[uid]=[]; profiles[uid]={"display_name":uid,"avatar":"🙂","status":"","theme":"dark","is_private":False}
         touch(uid)
         return jsonify({"status":"ok","user_id":uid,"new":True})
     if passwords[uid]!=pwh:
@@ -88,7 +89,7 @@ def get_profile(user_id):
 @app.post('/profile/<user_id>')
 def set_profile(user_id):
     profiles.setdefault(user_id,{"display_name":user_id,"avatar":"🙂","status":"","theme":"dark"})
-    for k in ["display_name","avatar","status","theme"]:
+    for k in ["display_name","avatar","status","theme","is_private"]:
         if k in request.json: profiles[user_id][k]=request.json[k]
     return jsonify({"status":"ok","profile":profiles[user_id]})
 
@@ -229,6 +230,95 @@ def add_to_group(gid):
     if not g or uid not in g['members']: return jsonify({"error":"forbidden"}),403
     if nm in users and nm not in g['members']: g['members'].append(nm)
     return jsonify({"status":"ok","members":g['members']})
+
+# ── Chat Requests ──────────────────────────────────────────
+
+@app.post('/request/send')
+def send_request():
+    data   = request.json
+    sender = data.get('from','')
+    to     = data.get('to','')
+    if sender not in user_keys or to not in users:
+        return jsonify({"error":"invalid"}), 400
+    touch(sender)
+    # Check if target is private
+    tp = profiles.get(to, {})
+    if not tp.get('is_private', False):
+        return jsonify({"status":"not_needed"})
+    # Check existing request
+    existing = [r for r in chat_requests.get(to,[]) if r['from']==sender]
+    if existing:
+        ex = existing[0]
+        if ex['status'] == 'pending':
+            return jsonify({"status":"already_sent"})
+        if ex['status'] == 'accepted':
+            return jsonify({"status":"already_accepted"})
+        if ex['status'] == 'rejected':
+            # Allow resend — reset to pending
+            ex['status'] = 'pending'
+            ex['ts'] = time.time()
+            return jsonify({"status":"resent","request_id": ex['id']})
+    req_id = str(uuid.uuid4())
+    chat_requests.setdefault(to, []).append({
+        "id": req_id, "from": sender, "ts": time.time(), "status": "pending"
+    })
+    return jsonify({"status":"sent","request_id":req_id})
+
+@app.post('/request/respond')
+def respond_request():
+    data   = request.json
+    uid    = data.get('user_id','')
+    req_id = data.get('request_id','')
+    action = data.get('action','')  # accept / reject
+    if uid not in user_keys: return jsonify({"error":"unauthorized"}), 401
+    touch(uid)
+    for r in chat_requests.get(uid, []):
+        if r['id'] == req_id:
+            r['status'] = 'accepted' if action == 'accept' else 'rejected'
+            return jsonify({"status":"ok","action":r['status']})
+    return jsonify({"error":"not found"}), 404
+
+@app.get('/requests/incoming')
+def incoming_requests():
+    uid = request.args.get('user_id','')
+    if uid not in user_keys: return jsonify([])
+    touch(uid)
+    reqs = chat_requests.get(uid, [])
+    result = []
+    for r in reqs:
+        if r['status'] == 'pending':
+            p = profiles.get(r['from'], {})
+            result.append({
+                "id": r['id'], "from": r['from'],
+                "display_name": p.get('display_name', r['from']),
+                "avatar": p.get('avatar','🙂'), "ts": r['ts']
+            })
+    return jsonify(result)
+
+@app.get('/request/status')
+def request_status():
+    sender = request.args.get('from','')
+    to     = request.args.get('to','')
+    for r in chat_requests.get(to, []):
+        if r['from'] == sender:
+            return jsonify({"status": r['status'], "request_id": r['id']})
+    return jsonify({"status":"none"})
+
+@app.get('/chat/allowed')
+def chat_allowed():
+    uid   = request.args.get('user_id','')
+    other = request.args.get('other','')
+    tp    = profiles.get(other, {})
+    if not tp.get('is_private', False):
+        return jsonify({"allowed": True})
+    # Check if accepted request exists
+    for r in chat_requests.get(other, []):
+        if r['from'] == uid and r['status'] == 'accepted':
+            return jsonify({"allowed": True})
+    for r in chat_requests.get(uid, []):
+        if r['from'] == other and r['status'] == 'accepted':
+            return jsonify({"allowed": True})
+    return jsonify({"allowed": False})
 
 # ── AI Bot ─────────────────────────────────────────────────
 def groq_request(history):

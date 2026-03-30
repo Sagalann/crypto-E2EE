@@ -256,6 +256,35 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .help-btn{background:rgba(108,99,255,.2);color:var(--txt);border:1px solid rgba(108,99,255,.35);width:42px;height:42px;border-radius:11px;cursor:pointer;font-size:18px;flex-shrink:0;transition:.2s;display:flex;align-items:center;justify-content:center;line-height:1}
 .help-btn:hover{background:rgba(108,99,255,.35)}
 
+/* CHAT REQUESTS */
+.req-banner{background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:14px;padding:14px 16px;margin:12px;display:flex;flex-direction:column;gap:10px}
+.req-banner-title{font-size:.78em;font-weight:600;color:var(--accent);letter-spacing:.3px}
+.req-item{display:flex;align-items:center;gap:10px}
+.req-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.req-info{flex-grow:1;min-width:0}
+.req-name{font-size:.85em;font-weight:600}
+.req-btns{display:flex;gap:6px}
+.req-accept{background:rgba(46,204,113,.2);border:1px solid rgba(46,204,113,.4);color:#2ecc71;border-radius:8px;padding:5px 12px;font-size:.78em;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s}
+.req-accept:hover{background:rgba(46,204,113,.35)}
+.req-reject{background:rgba(255,100,100,.15);border:1px solid rgba(255,100,100,.3);color:#ff6464;border-radius:8px;padding:5px 12px;font-size:.78em;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s}
+.req-reject:hover{background:rgba(255,100,100,.28)}
+/* blocked state */
+.chat-blocked{display:flex;flex-direction:column;align-items:center;justify-content:center;flex-grow:1;gap:12px;color:var(--txt2);font-size:.88em;padding:20px}
+.chat-blocked-icon{font-size:40px;opacity:.4}
+.req-send-btn{background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:11px;padding:11px 24px;color:white;font-family:'Outfit',sans-serif;font-size:.9em;font-weight:600;cursor:pointer;transition:.2s;box-shadow:0 4px 12px var(--aglow)}
+.req-send-btn:hover{transform:translateY(-1px)}
+.req-send-btn:disabled{opacity:.5;cursor:default;transform:none}
+/* privacy toggle in profile */
+.privacy-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.privacy-label{font-size:.85em;font-weight:500}
+.privacy-sub{font-size:.72em;color:var(--txt2);margin-top:2px}
+.toggle-wrap{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--glass-b);border-radius:12px;cursor:pointer;transition:.25s}
+.toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:white;border-radius:50%;transition:.25s}
+.toggle-wrap input:checked+.toggle-slider{background:var(--accent)}
+.toggle-wrap input:checked+.toggle-slider:before{transform:translateX(20px)}
+
 /* PROFILE MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(7px);z-index:3000;display:none;align-items:center;justify-content:center}
 .overlay.open{display:flex;animation:fadeIn .2s ease}
@@ -335,6 +364,16 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <div><label class="pf-label">ОТОБРАЖАЕМОЕ ИМЯ</label><input class="pf-input" id="pf-name" placeholder="Как тебя зовут?"></div>
       <div><label class="pf-label">СТАТУС</label><textarea class="pf-ta" id="pf-status" rows="2" placeholder="Напиши о себе..."></textarea></div>
       <div><label class="pf-label">ТЕМА</label><div class="theme-row"><div class="theme-opt" id="t-dark" onclick="pickTheme('dark')">🌙 Тёмная</div><div class="theme-opt" id="t-light" onclick="pickTheme('light')">☀️ Светлая</div></div></div>
+      <div class="privacy-row">
+        <div>
+          <div class="privacy-label">🔒 Приватный профиль</div>
+          <div class="privacy-sub">Только по запросу смогут написать</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="pf-private">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <button class="save-btn" onclick="saveProf()">💾 Сохранить</button>
     </div>
   </div>
@@ -372,6 +411,7 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <div class="sb-tab" id="tab-grp" onclick="switchTab('grp')">👥 Группы</div>
     </div>
     <div class="sb-search"><input type="text" placeholder="Поиск..." id="search" oninput="filterList()"></div>
+    <div id="requests-banner"></div>
     <div class="user-list" id="user-list"></div>
   </div>
 
@@ -386,6 +426,11 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
         <div id="ch-sub"></div>
       </div>
       <div class="e2ee-badge" id="e2ee-badge">🔒 E2EE</div>
+    </div>
+    <div id="chat-blocked-view" class="chat-blocked" style="display:none">
+      <div class="chat-blocked-icon">🔒</div>
+      <div id="blocked-text">Профиль приватный</div>
+      <button class="req-send-btn" id="req-send-btn" onclick="sendChatRequest()">Отправить запрос</button>
     </div>
     <div id="messages"><div class="empty-state"><div class="empty-icon">💬</div><div>Выберите контакт для начала чата</div></div></div>
     <div id="reply-bar">
@@ -456,6 +501,7 @@ async function doLogin(){
         setInterval(pollMsgs,1000);
         setInterval(refreshAll,3000);
         setInterval(heartbeat,10000);
+        setInterval(pollRequests,5000);
         heartbeat();
         refreshAll(); // сразу показываем пользователей
     }catch(e){err.innerText='Ошибка сети'}
@@ -483,13 +529,13 @@ function buildAvGrid(){
         g.appendChild(el);
     });
 }
-function openProf(){selAv=myProfile.avatar||'🙂';selTheme=myProfile.theme||'dark';document.getElementById('av-preview').innerText=selAv;document.getElementById('pf-name').value=myProfile.display_name||'';document.getElementById('pf-status').value=myProfile.status||'';pickTheme(selTheme);buildAvGrid();document.getElementById('overlay').classList.add('open')}
+function openProf(){selAv=myProfile.avatar||'🙂';selTheme=myProfile.theme||'dark';document.getElementById('av-preview').innerText=selAv;document.getElementById('pf-name').value=myProfile.display_name||'';document.getElementById('pf-status').value=myProfile.status||'';document.getElementById('pf-private').checked=myProfile.is_private||false;pickTheme(selTheme);buildAvGrid();document.getElementById('overlay').classList.add('open')}
 function closeProf(){applyTheme(myProfile.theme||'dark');document.getElementById('overlay').classList.remove('open')}
 function overlayClick(e){if(e.target===document.getElementById('overlay'))closeProf()}
-async function saveProf(){
+async function saveProf(){const isPrivate=document.getElementById('pf-private').checked;
     const name=document.getElementById('pf-name').value.trim();
     const status=document.getElementById('pf-status').value.trim();
-    myProfile={display_name:name||myId,avatar:selAv,status,theme:selTheme};
+    myProfile={display_name:name||myId,avatar:selAv,status,theme:selTheme,is_private:isPrivate};
     await fetch(`/profile/${myId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(myProfile)});
     applyTheme(selTheme);updateSidebar();document.getElementById('overlay').classList.remove('open');
 }
@@ -549,17 +595,53 @@ async function openDM(u,av,nm){
     targetId=u; targetType='dm'; unreadCounts[u]=0; renderedMsgIds.clear(); showChat();
     const online=onlineMap[u]||false;
     document.getElementById('ch-av').style.display='flex';
-    document.getElementById('ch-av').childNodes[0].nodeValue=av; // text node hack
     document.getElementById('ch-av').innerHTML=`${av}<div class="ch-online-ring ${online?'on':''}"></div>`;
     document.getElementById('ch-title').innerText=nm;
     document.getElementById('ch-sub').innerText=online?'🟢 в сети':'⚫ не в сети';
     document.getElementById('e2ee-badge').style.display='flex';
     document.getElementById('messages').innerHTML='';
     cancelReply();
+
+    // Check if chat is allowed (privacy)
+    try{
+        const ck=await fetch(`/chat/allowed?user_id=${myId}&other=${u}`).then(r=>r.json());
+        const blockedView=document.getElementById('chat-blocked-view');
+        const messagesView=document.getElementById('messages');
+        const inpBar=document.querySelector('.chat .inp-bar');
+        const replyBar=document.getElementById('reply-bar');
+        if(!ck.allowed){
+            blockedView.style.display='flex';
+            messagesView.style.display='none';
+            if(inpBar) inpBar.style.display='none';
+            if(replyBar) replyBar.style.display='none';
+            // Check existing request status
+            const rs=await fetch(`/request/status?from=${myId}&to=${u}`).then(r=>r.json());
+            const btn=document.getElementById('req-send-btn');
+            const txt=document.getElementById('blocked-text');
+            if(rs.status==='pending'){
+                txt.innerText='Запрос отправлен, ожидаем ответа';
+                btn.innerText='Запрос отправлен';
+                btn.disabled=true;
+            } else if(rs.status==='rejected'){
+                txt.innerText='Запрос был отклонён';
+                btn.innerText='Отправить повторно';
+                btn.disabled=false;
+            } else {
+                txt.innerText='Профиль приватный — отправь запрос';
+                btn.innerText='Отправить запрос';
+                btn.disabled=false;
+            }
+            filterList(); return;
+        }
+        // Allowed — show normal chat
+        blockedView.style.display='none';
+        messagesView.style.display='flex';
+        if(inpBar) inpBar.style.display='flex';
+    }catch(e){}
+
     try{
         const hist=await fetch(`/chat_history?user_id=${myId}&other=${u}`).then(r=>r.json());
         hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id));
-        // Отмечаем как прочитанные
         await fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:u})});
         pollReadStatus();
     }catch(e){}
@@ -896,6 +978,65 @@ async function handleAIFileSelect(e){
         }
     }catch(ex){console.error(ex)}
     e.target.value='';
+}
+
+// ── Chat Requests ──────────────────────────────────────────
+async function sendChatRequest(){
+    if(!targetId) return;
+    const btn=document.getElementById('req-send-btn');
+    const txt=document.getElementById('blocked-text');
+    btn.disabled=true;
+    try{
+        const r=await fetch('/request/send',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({from:myId,to:targetId})});
+        const d=await r.json();
+        if(d.status==='sent'||d.status==='resent'){
+            txt.innerText='Запрос отправлен, ожидаем ответа';
+            btn.innerText='Запрос отправлен';
+        } else if(d.status==='already_sent'){
+            txt.innerText='Запрос уже отправлен, ожидаем ответа';
+            btn.innerText='Запрос отправлен';
+        } else if(d.status==='not_needed'){
+            // profile became public — reload
+            openDM(targetId,(allProfiles[targetId]||{}).avatar||'?',(allProfiles[targetId]||{}).display_name||targetId);
+        }
+    }catch(e){ btn.disabled=false; }
+}
+
+async function respondToRequest(reqId, action){
+    try{
+        await fetch('/request/respond',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,request_id:reqId,action})});
+        await pollRequests();
+    }catch(e){}
+}
+
+async function pollRequests(){
+    if(!myId) return;
+    try{
+        const reqs=await fetch(`/requests/incoming?user_id=${myId}`).then(r=>r.json());
+        const banner=document.getElementById('requests-banner');
+        banner.innerHTML='';
+        if(!reqs||!reqs.length) return;
+        const wrap=document.createElement('div');wrap.className='req-banner';
+        const title=document.createElement('div');title.className='req-banner-title';
+        title.innerText=`🔔 Запросы на переписку (${reqs.length})`;
+        wrap.appendChild(title);
+        reqs.forEach(r=>{
+            const item=document.createElement('div');item.className='req-item';
+            item.innerHTML=`
+                <div class="req-av">${r.avatar}</div>
+                <div class="req-info"><div class="req-name">${r.display_name}</div></div>
+                <div class="req-btns">
+                    <button class="req-accept" onclick="respondToRequest('${r.id}','accept')">✓</button>
+                    <button class="req-reject" onclick="respondToRequest('${r.id}','reject')">✗</button>
+                </div>`;
+            wrap.appendChild(item);
+        });
+        banner.appendChild(wrap);
+    }catch(e){}
 }
 
 function sendCmd(c){document.getElementById('ai-in').value=c;sendToAI()}
