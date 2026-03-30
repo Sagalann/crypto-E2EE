@@ -185,6 +185,19 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
 .ctx-item.danger:hover{background:rgba(255,100,100,.12)}
 .ctx-sep{height:1px;background:var(--glass-b);margin:4px 0}
 
+/* ── Reactions ── */
+.reactions-bar{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.reaction{display:inline-flex;align-items:center;gap:3px;background:var(--glass);border:1px solid var(--glass-b);border-radius:20px;padding:3px 8px;cursor:pointer;font-size:.82em;transition:.15s;user-select:none}
+.reaction:hover{background:rgba(59,158,255,.12);border-color:rgba(59,158,255,.3)}
+.reaction.mine{background:rgba(59,158,255,.15);border-color:rgba(59,158,255,.4);color:var(--accent)}
+.reaction-count{font-size:.75em;font-weight:600;color:var(--txt2)}
+.reaction.mine .reaction-count{color:var(--accent)}
+/* emoji picker */
+.emoji-picker{position:absolute;bottom:44px;right:0;background:var(--modal-bg);border:1px solid var(--glass-b);border-radius:14px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:248px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .15s ease}
+.emoji-picker span{font-size:1.3em;cursor:pointer;padding:4px;border-radius:7px;transition:.1s;line-height:1}
+.emoji-picker span:hover{background:var(--glass-h);transform:scale(1.2)}
+.emoji-trigger{background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:.9em;opacity:.6;transition:.15s;flex-shrink:0}
+.emoji-trigger:hover{opacity:1;background:var(--glass-h)}
 /* ── Deleted / edited message ── */
 .msg-deleted{color:var(--txt2)!important;font-style:italic;opacity:.6}
 .msg-edited{font-size:.65em;color:var(--txt2);margin-left:4px;opacity:.7}
@@ -535,11 +548,15 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   <div class="grp-modal">
     <div class="pm-head"><span>👥 Новая группа</span><button class="pm-x" onclick="closeGrp()">×</button></div>
     <div class="pm-body">
-      <div><label class="pf-label">НАЗВАНИЕ ГРУППЫ</label><input class="pf-input" id="grp-name" placeholder="Название..."></div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+        <div class="av-big" id="grp-av-preview" style="width:56px;height:56px;font-size:28px;margin:0;flex-shrink:0">👥</div>
+        <div style="flex:1"><label class="pf-label">НАЗВАНИЕ ГРУППЫ</label><input class="pf-input" id="grp-name" placeholder="Название..."></div>
+      </div>
+      <div><label class="pf-label">АВАТАР ГРУППЫ</label><div class="av-grid" id="grp-av-grid" style="grid-template-columns:repeat(10,1fr)"></div></div>
       <div>
         <label class="pf-label">УЧАСТНИКИ</label>
         <div class="members-list" id="grp-members-chips"></div>
-        <div id="grp-user-pick" style="margin-top:8px;max-height:160px;overflow-y:auto"></div>
+        <div id="grp-user-pick" style="margin-top:8px;max-height:140px;overflow-y:auto"></div>
       </div>
       <button class="save-btn" onclick="createGroup()">✅ Создать группу</button>
     </div>
@@ -625,6 +642,7 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикрепить файл">📎</button>
       <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)">
       <input type="text" id="msg-in" placeholder="Сообщение...">
+      <button class="emoji-trigger" onclick="showInputEmojiPicker(this,'msg-in')" style="font-size:1.1em;padding:6px 9px;opacity:.7" title="Эмодзи">😊</button>
       <button class="send-btn" onclick="sendMsg()">➤</button>
     </div>
   </div>
@@ -732,6 +750,68 @@ function applyTheme(t){document.documentElement.setAttribute('data-theme',t==='l
 function pickTheme(t){selTheme=t;document.getElementById('t-dark').classList.toggle('sel',t==='dark');document.getElementById('t-light').classList.toggle('sel',t==='light');applyTheme(t)}
 
 // ── Login ───────────────────────────────────────────────────
+// ── Auth persistence ────────────────────────────────────────
+const AUTH_KEY='cm_auth';
+const INACTIVE_MS=10*60*1000; // 10 minutes
+let lastActivityTs=Date.now();
+
+function saveAuth(uid,pw){ localStorage.setItem(AUTH_KEY,JSON.stringify({uid,pw,ts:Date.now()})); }
+function clearAuth(){ localStorage.removeItem(AUTH_KEY); }
+function touchActivity(){ lastActivityTs=Date.now(); localStorage.setItem(AUTH_KEY+'_ts',Date.now()); }
+
+// Track user activity
+['click','keydown','touchstart','scroll','mousemove'].forEach(ev=>{
+    document.addEventListener(ev,()=>touchActivity(),{passive:true});
+});
+
+// Try auto-login from saved credentials
+async function tryAutoLogin(){
+    const saved=localStorage.getItem(AUTH_KEY);
+    if(!saved) return false;
+    try{
+        const {uid,pw,ts}=JSON.parse(saved);
+        // Check last activity time
+        const lastAct=parseInt(localStorage.getItem(AUTH_KEY+'_ts')||ts)||ts;
+        if(Date.now()-lastAct > INACTIVE_MS){ clearAuth(); return false; }
+        const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:uid,password:pw})});
+        const d=await r.json();
+        if(d.status==='ok'){
+            myId=uid;
+            document.getElementById('login-screen').style.display='none';
+            await loadMyProfile();
+            applyTheme(myProfile.theme);
+            updateSidebar();
+            startPolling();
+            touchActivity();
+            return true;
+        }
+    }catch(e){}
+    clearAuth();
+    return false;
+}
+
+// Check inactivity every minute
+setInterval(()=>{
+    if(!myId) return;
+    const lastAct=parseInt(localStorage.getItem(AUTH_KEY+'_ts')||Date.now());
+    if(Date.now()-lastAct > INACTIVE_MS){
+        clearAuth(); myId='';
+        document.getElementById('login-screen').style.display='flex';
+    }
+},60000);
+
+function startPolling(){
+    setInterval(pollMsgs,1000);
+    setInterval(refreshAll,3000);
+    setInterval(heartbeat,10000);
+    setInterval(pollRequests,5000);
+    setInterval(pollChannelPosts,2000);
+    setTimeout(initPushNotifications,2000);
+    heartbeat();
+    refreshAll();
+}
+
 async function doLogin(){
     const uid=document.getElementById('login-name').value.trim();
     const pw=document.getElementById('login-pass').value.trim();
@@ -743,18 +823,13 @@ async function doLogin(){
         const d=await r.json();
         if(!r.ok){err.innerText=d.message||'Ошибка';return}
         myId=uid;
+        saveAuth(uid, pw);
+        touchActivity();
         document.getElementById('login-screen').style.display='none';
         await loadMyProfile();
         applyTheme(myProfile.theme);
         updateSidebar();
-        setInterval(pollMsgs,1000);
-        setInterval(refreshAll,3000);
-        setInterval(heartbeat,10000);
-        setInterval(pollRequests,5000);
-        setInterval(pollChannelPosts,2000);
-        setTimeout(initPushNotifications,2000);
-        heartbeat();
-        refreshAll();
+        startPolling();
         pollRequests();
     }catch(e){err.innerText='Ошибка сети'}
 }
@@ -1235,6 +1310,16 @@ function addBubble(sender,text,mine,cid,msgId,replyInfo,read,fileId,deleted,edit
         b.appendChild(rs);
     }
 
+    // Reactions bar
+    if(msgId && cid==='messages'){
+        const rbar=document.createElement('div');
+        rbar.className='reactions-bar';
+        rbar.dataset.msgId=msgId;
+        wrap.appendChild(rbar);
+        // Load existing reactions
+        loadReactions(msgId, rbar, mine);
+    }
+
     wrap.appendChild(b);
     box.appendChild(wrap);
     box.scrollTop=box.scrollHeight;
@@ -1531,8 +1616,28 @@ async function downloadFile(fileId,fb){
 }
 
 // ── Groups modal ──────────────────────────────────────────────
+const GRP_EMOJIS=['👥','🎮','🎵','📚','💼','🏆','🌍','🎨','⚽','🍕','🎯','💡','🚀','🔬','🎭','🏖️','🎪','🦁','🐉','⚡'];
+let selGrpAv='👥';
+
 function openGrpModal(){
     grpMembers=[];renderGrpChips();
+    selGrpAv='👥';
+    document.getElementById('grp-av-preview').innerText='👥';
+    // Build group avatar grid
+    const gg=document.getElementById('grp-av-grid');
+    if(gg){ gg.innerHTML='';
+      GRP_EMOJIS.forEach(em=>{
+        const el=document.createElement('div');
+        el.className='av-opt'+(em===selGrpAv?' sel':'');
+        el.innerText=em;
+        el.onclick=()=>{
+          document.querySelectorAll('#grp-av-grid .av-opt').forEach(x=>x.classList.remove('sel'));
+          el.classList.add('sel'); selGrpAv=em;
+          document.getElementById('grp-av-preview').innerText=em;
+        };
+        gg.appendChild(el);
+      });
+    }
     document.getElementById('grp-name').value='';
     const pick=document.getElementById('grp-user-pick');pick.innerHTML='';
     allUsers.filter(u=>u!==myId&&u!=='Crypto_Assistor').forEach(u=>{
@@ -1573,8 +1678,9 @@ function renderGrpChips(){
 
 async function createGroup(){
     const name=document.getElementById('grp-name').value.trim();
+    const grpAvatar=selGrpAv||'👥';
     if(!name){alert('Введи название');return}
-    const r=await fetch('/group/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,name,members:grpMembers})});
+    const r=await fetch('/group/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,name,members:grpMembers,avatar:grpAvatar})});
     const d=await r.json();
     if(d.blocked&&d.blocked.length>0){
         const names=d.blocked.map(u=>(allProfiles[u]||{}).display_name||u).join(', ');
@@ -1956,6 +2062,108 @@ function sendBrowserNotif(title, body, icon){
     }
 }
 
+// ── Reactions & Emoji ──────────────────────────────────────
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉', '🤔', '💯', '😍', '🙏', '💪', '✅', '😎', '🚀'];
+const EMOJI_FULL   = ['😀', '😂', '😍', '🥰', '😎', '🤔', '😮', '😢', '😡', '🥳', '🎉', '🔥', '❤️', '💯', '👍', '👎', '👏', '🙏', '💪', '🚀', '✅', '❌', '💎', '⚡', '🌟', '🎯', '💡', '🔒', '🛡️', '⚔️'];
+
+const reactionCache = {}; // { msgId: {emoji:[uids]} }
+
+async function loadReactions(msgId, rbar, mine){
+    try{
+        const d = await fetch(`/reactions?msg_ids=${msgId}`).then(r=>r.json());
+        reactionCache[msgId] = d[msgId]||{};
+        renderReactions(msgId, rbar, mine);
+    }catch(e){}
+}
+
+function renderReactions(msgId, rbar, mine){
+    rbar.innerHTML='';
+    const rdata = reactionCache[msgId]||{};
+    Object.entries(rdata).forEach(([emoji, uids])=>{
+        if(!uids.length) return;
+        const pill = document.createElement('span');
+        pill.className='reaction'+(uids.includes(myId)?' mine':'');
+        pill.innerHTML=`${emoji}<span class="reaction-count">${uids.length}</span>`;
+        pill.title=uids.map(u=>(allProfiles[u]||{}).display_name||u).join(', ');
+        pill.onclick=()=>sendReaction(msgId, emoji, rbar, mine);
+        rbar.appendChild(pill);
+    });
+    // Add emoji button (only for messages, not AI chat)
+    const addBtn = document.createElement('span');
+    addBtn.className='emoji-trigger';
+    addBtn.innerText='＋';
+    addBtn.title='Добавить реакцию';
+    addBtn.onclick=(e)=>{e.stopPropagation(); showEmojiPicker(e, msgId, rbar, mine);};
+    rbar.appendChild(addBtn);
+}
+
+let activeEmojiPicker=null;
+function showEmojiPicker(e, msgId, rbar, mine){
+    if(activeEmojiPicker){ activeEmojiPicker.remove(); activeEmojiPicker=null; return; }
+    const picker=document.createElement('div');
+    picker.className='emoji-picker';
+    // Quick reactions row
+    const quick=document.createElement('div');
+    quick.style.cssText='width:100%;display:flex;gap:2px;padding-bottom:6px;border-bottom:1px solid var(--glass-b);margin-bottom:4px';
+    QUICK_EMOJIS.forEach(em=>{
+        const s=document.createElement('span');s.innerText=em;
+        s.onclick=()=>{sendReaction(msgId,em,rbar,mine);picker.remove();activeEmojiPicker=null;};
+        quick.appendChild(s);
+    });
+    picker.appendChild(quick);
+    // Full emoji grid
+    EMOJI_FULL.forEach(em=>{
+        const s=document.createElement('span');s.innerText=em;
+        s.onclick=()=>{sendReaction(msgId,em,rbar,mine);picker.remove();activeEmojiPicker=null;};
+        picker.appendChild(s);
+    });
+    // Position relative to button
+    const btnRect=e.target.getBoundingClientRect();
+    picker.style.position='fixed';
+    picker.style.bottom=(window.innerHeight-btnRect.top+6)+'px';
+    picker.style.left=Math.min(btnRect.left, window.innerWidth-260)+'px';
+    document.body.appendChild(picker);
+    activeEmojiPicker=picker;
+    // Close on outside click
+    setTimeout(()=>document.addEventListener('click', function cl(){picker.remove();activeEmojiPicker=null;document.removeEventListener('click',cl);}),10);
+}
+
+async function sendReaction(msgId, emoji, rbar, mine){
+    try{
+        const d=await fetch('/react',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:myId,msg_id:msgId,emoji})});
+        const r=await d.json();
+        reactionCache[msgId]=r.reactions||{};
+        renderReactions(msgId, rbar, mine);
+    }catch(e){}
+}
+
+// Emoji picker for message input
+let emojiInputTarget=null;
+function showInputEmojiPicker(btn, inputId){
+    if(activeEmojiPicker){activeEmojiPicker.remove();activeEmojiPicker=null;return;}
+    const inp=document.getElementById(inputId);
+    const picker=document.createElement('div');
+    picker.className='emoji-picker';
+    picker.style.bottom='54px';
+    picker.style.right='60px';
+    picker.style.position='absolute';
+    EMOJI_FULL.forEach(em=>{
+        const s=document.createElement('span');s.innerText=em;
+        s.onclick=()=>{
+            const pos=inp.selectionStart;
+            inp.value=inp.value.slice(0,pos)+em+inp.value.slice(pos);
+            inp.focus();inp.selectionStart=inp.selectionEnd=pos+em.length;
+            picker.remove();activeEmojiPicker=null;
+        };
+        picker.appendChild(s);
+    });
+    btn.parentElement.style.position='relative';
+    btn.parentElement.appendChild(picker);
+    activeEmojiPicker=picker;
+    setTimeout(()=>document.addEventListener('click',function cl(e){if(!picker.contains(e.target)){picker.remove();activeEmojiPicker=null;document.removeEventListener('click',cl);}},),10);
+}
+
 function sendCmd(c){document.getElementById('ai-in').value=c;sendToAI()}
 function fillCmd(c){const i=document.getElementById('ai-in');i.value=c;i.focus()}
 
@@ -2079,6 +2287,8 @@ function showChat(){
 })();
 document.getElementById('login-name').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 document.getElementById('login-pass').onkeypress=e=>{if(e.key==='Enter')doLogin()};
+// Try auto-login from saved session
+tryAutoLogin();
 </script>
 </body>
 </html>

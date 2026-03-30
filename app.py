@@ -154,13 +154,13 @@ def get_user_profile(user_id):
 @app.post('/profile/<user_id>')
 def set_profile(user_id):
     profiles.setdefault(user_id,{"display_name":user_id,"avatar":"🙂","status":"","theme":"dark"})
-    for k in ["display_name","avatar","status","theme","is_private"]:
+    for k in ["display_name","avatar","avatar_color","status","theme","is_private"]:
         if k in request.json: profiles[user_id][k]=request.json[k]
     return jsonify({"status":"ok","profile":profiles[user_id]})
 
 @app.get('/profiles')
 def get_all_profiles():
-    return jsonify({uid:{"display_name":p["display_name"],"avatar":p["avatar"],"status":p["status"],"online":is_online(uid)} for uid,p in profiles.items()})
+    return jsonify({uid:{"display_name":p["display_name"],"avatar":p["avatar"],"avatar_color":p.get("avatar_color","#1a6fd4,#3b9eff"),"status":p["status"],"online":is_online(uid)} for uid,p in profiles.items()})
 
 # ── Messages ───────────────────────────────────────────────
 @app.post('/send')
@@ -626,6 +626,34 @@ def push_subscribe():
 def vapid_key():
     # Placeholder — real VAPID needs pywebpush
     return jsonify({"key": os.environ.get("VAPID_PUBLIC_KEY","")})
+
+# ── Reactions ──────────────────────────────────────────────
+reactions = {}  # { msg_id: { emoji: [uid, ...] } }
+
+@app.post('/react')
+def add_reaction():
+    data   = request.json
+    uid    = data.get('user_id','')
+    msg_id = data.get('msg_id','')
+    emoji  = data.get('emoji','')
+    if uid not in user_keys or not msg_id or not emoji:
+        return jsonify({"error":"invalid"}), 400
+    touch(uid)
+    reactions.setdefault(msg_id, {})
+    reactions[msg_id].setdefault(emoji, [])
+    if uid in reactions[msg_id][emoji]:
+        reactions[msg_id][emoji].remove(uid)  # toggle off
+        if not reactions[msg_id][emoji]:
+            del reactions[msg_id][emoji]
+    else:
+        reactions[msg_id][emoji].append(uid)
+    return jsonify({"status":"ok", "reactions": reactions.get(msg_id,{})})
+
+@app.get('/reactions')
+def get_reactions():
+    msg_ids = request.args.get('msg_ids','').split(',')
+    result  = {mid: reactions.get(mid,{}) for mid in msg_ids if mid}
+    return jsonify(result)
 
 # ── AI Bot ─────────────────────────────────────────────────
 def groq_request(history):
