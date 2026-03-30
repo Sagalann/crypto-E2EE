@@ -738,6 +738,8 @@ function switchTab(tab){
     if(tab==='notif') renderNotifications();
     else if(tab==='ch') renderChannelList();
     else filterList();
+    // Refresh DM badge after tab switch
+    updateDMBadge();
 }
 
 function clearChatPanel(){
@@ -807,6 +809,7 @@ function renderGroups(q){
 
 async function openDM(u,av,nm){
     targetId=u; targetType='dm'; unreadCounts[u]=0;
+    updateDMBadge();
     renderedMsgIds.clear();
     // Block pollMsgs from adding to messages panel while we load history
     const loadingFor=u;
@@ -913,6 +916,7 @@ async function refreshAll(){
         console.log('[refreshAll] users:', us, 'profiles keys:', Object.keys(ps));
         allUsers=us; allProfiles=ps; onlineMap=online; allGroups=grps;
         filterList();
+        updateDMBadge();
         // Обновляем заголовок если открыт DM
         if(targetId&&targetType==='dm'){
             const online_now=onlineMap[targetId]||false;
@@ -936,6 +940,7 @@ async function pollMsgs(){
     if(!myId) return;
     try{
         const msgs=await fetch(`/get_messages?user_id=${myId}`).then(r=>r.json());
+        let gotNewDM=false;
         msgs.forEach(m=>{
             if(m.from==='Crypto_Assistor'){
                 addBubble('AI',m.text,false,'ai-msgs',m.id,m.reply_to,true,m.file_id);
@@ -952,10 +957,32 @@ async function pollMsgs(){
                 if(!msgBuffer[m.from]) msgBuffer[m.from]=[];
                 msgBuffer[m.from].push(m);
                 unreadCounts[m.from]=(unreadCounts[m.from]||0)+1;
-                filterList();
+                gotNewDM=true;
             }
         });
+        if(gotNewDM){
+            filterList();
+            updateDMBadge();
+        }
     }catch(e){}
+}
+
+function updateDMBadge(){
+    const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
+    const dmTab=document.getElementById('tab-dm');
+    if(!dmTab) return;
+    let badge=dmTab.querySelector('.nav-badge');
+    if(!badge){
+        badge=document.createElement('span');
+        badge.className='nav-badge';
+        dmTab.appendChild(badge);
+    }
+    if(total>0){
+        badge.style.display='flex';
+        badge.innerText=total>99?'99+':total;
+    } else {
+        badge.style.display='none';
+    }
 }
 
 async function pollReadStatus(){
@@ -1433,20 +1460,24 @@ async function openChannel(cid, ch){
     document.getElementById('messages').innerHTML='';
     document.getElementById('chat-blocked-view').style.display='none';
     document.getElementById('messages').style.display='flex';
-    // Show/hide input bar based on ownership
     const inpBar=document.querySelector('.chat .inp-bar');
     const isOwner=ch.is_owner;
     if(inpBar) inpBar.style.display=isOwner?'flex':'none';
     targetId=cid; targetType='channel';
-    channelLastTs[cid]=0;
+    // Mark as loading so pollChannelPosts doesn't race
+    channelLastTs[cid]=-1;
+    const loadingCid=cid;
     try{
         const posts=await fetch(`/channel/${cid}/posts?user_id=${myId}&since=0`).then(r=>r.json());
-        posts.forEach(p=>addBubble(p.from,p.text,p.from===myId,'messages',p.id,null,true,p.file_id));
-        if(posts.length) channelLastTs[cid]=posts[posts.length-1].ts;
-    }catch(e){}
-    // Update sub button in chat header
+        // Only render if still on same channel
+        if(currentChannelId===loadingCid){
+            renderedMsgIds.clear();
+            document.getElementById('messages').innerHTML='';
+            posts.forEach(p=>addBubble(p.from,p.text,p.from===myId,'messages',p.id,null,true,p.file_id));
+            channelLastTs[cid]=posts.length?posts[posts.length-1].ts:0;
+        }
+    }catch(e){ channelLastTs[cid]=0; }
     updateSubButton(cid,ch);
-    // Show/hide edit button for owner
     updateEditChannelButton(cid,ch);
     renderChannelList();
 }
@@ -1559,12 +1590,17 @@ async function createChannel(){
 // Poll channel posts
 async function pollChannelPosts(){
     if(targetType!=='channel'||!currentChannelId) return;
+    const cid=currentChannelId;
+    const since=channelLastTs[cid];
+    // Skip if channel is still loading initial posts
+    if(since===-1) return;
     try{
-        const since=channelLastTs[currentChannelId]||0;
-        const posts=await fetch(`/channel/${currentChannelId}/posts?user_id=${myId}&since=${since}`).then(r=>r.json());
+        const posts=await fetch(`/channel/${cid}/posts?user_id=${myId}&since=${since}`).then(r=>r.json());
+        // Guard: still on same channel after await
+        if(currentChannelId!==cid) return;
         posts.forEach(p=>{
             addBubble(p.from,p.text,p.from===myId,'messages',p.id,null,true,p.file_id);
-            channelLastTs[currentChannelId]=p.ts;
+            channelLastTs[cid]=p.ts;
         });
     }catch(e){}
 }
