@@ -2230,15 +2230,12 @@ function showEmojiPicker(e, msgId, rbar, mine){
     if(activeEmojiPicker){ activeEmojiPicker.remove(); activeEmojiPicker=null; return; }
     const picker=document.createElement('div');
     picker.className='emoji-picker';
-    // Quick reactions row
-    const quick=document.createElement('div');
-    quick.style.cssText='width:100%;display:flex;gap:2px;padding-bottom:6px;border-bottom:1px solid var(--glass-b);margin-bottom:4px';
+    // Quick reactions — spans directly in scrollable picker
     QUICK_EMOJIS.forEach(em=>{
         const s=document.createElement('span');s.innerText=em;
         s.onclick=()=>{sendReaction(msgId,em,rbar,mine);picker.remove();activeEmojiPicker=null;};
-        quick.appendChild(s);
+        picker.appendChild(s);
     });
-    picker.appendChild(quick);
     // Position relative to button
     const btnRect=e.target.getBoundingClientRect();
     const pickerH=52;
@@ -2254,7 +2251,7 @@ function showEmojiPicker(e, msgId, rbar, mine){
     const pickerW=Math.min(window.innerWidth-16, 340);
     const idealLeft=btnRect.left+btnRect.width/2-pickerW/2;
     picker.style.left=Math.max(8,Math.min(idealLeft,window.innerWidth-pickerW-8))+'px';
-    picker.style.width=pickerW+'px';
+    picker.style.maxWidth=pickerW+'px';
     document.body.appendChild(picker);
     activeEmojiPicker=picker;
     // Close on outside click
