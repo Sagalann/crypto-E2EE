@@ -806,7 +806,12 @@ function renderGroups(q){
 }
 
 async function openDM(u,av,nm){
-    targetId=u; targetType='dm'; unreadCounts[u]=0; renderedMsgIds.clear(); showChat();
+    targetId=u; targetType='dm'; unreadCounts[u]=0;
+    renderedMsgIds.clear();
+    // Block pollMsgs from adding to messages panel while we load history
+    const loadingFor=u;
+    openDM._loading=u;
+    showChat();
     const online=onlineMap[u]||false;
     document.getElementById('ch-av').style.display='flex';
     document.getElementById('ch-av').innerHTML=`${av}<div class="ch-online-ring ${online?'on':''}"></div>`;
@@ -845,7 +850,7 @@ async function openDM(u,av,nm){
                 btn.innerText='Отправить запрос';
                 btn.disabled=false;
             }
-            filterList(); return;
+            filterList(); openDM._loading=null; return;
         }
         // Allowed — show normal chat
         blockedView.style.display='none';
@@ -855,12 +860,19 @@ async function openDM(u,av,nm){
 
     try{
         const hist=await fetch(`/chat_history?user_id=${myId}&other=${u}`).then(r=>r.json());
-        hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id));
+        // Only render if user didn't switch away during async load
+        if(targetId===u && targetType==='dm'){
+            renderedMsgIds.clear(); // clear again — pollMsgs may have snuck IDs in
+            document.getElementById('messages').innerHTML='';
+            hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id));
+            // Flush buffer after history so no dupes
+            const buf=msgBuffer[u]||[];
+            if(buf.length){buf.forEach(m=>addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id));msgBuffer[u]=[];}
+        }
         await fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:u})});
         pollReadStatus();
     }catch(e){}
-    const buf=msgBuffer[u]||[];
-    if(buf.length){buf.forEach(m=>addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id));msgBuffer[u]=[];}
+    openDM._loading=null;
     document.querySelectorAll('.u-item').forEach(x=>x.classList.remove('active'));
     filterList();
 }
@@ -876,10 +888,15 @@ async function openGroup(gid,g){
     document.getElementById('messages').innerHTML='';
     cancelReply();
     groupLastTs[gid]=0;
+    const loadingGid=gid;
     try{
         const msgs=await fetch(`/group/${gid}/messages?user_id=${myId}&since=0`).then(r=>r.json());
-        msgs.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id));
-        if(msgs.length) groupLastTs[gid]=msgs[msgs.length-1].ts;
+        if(targetId===loadingGid && targetType==='group'){
+            renderedMsgIds.clear();
+            document.getElementById('messages').innerHTML='';
+            msgs.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,true,m.file_id));
+            if(msgs.length) groupLastTs[gid]=msgs[msgs.length-1].ts;
+        }
     }catch(e){}
     filterList();
 }
@@ -923,8 +940,14 @@ async function pollMsgs(){
             if(m.from==='Crypto_Assistor'){
                 addBubble('AI',m.text,false,'ai-msgs',m.id,m.reply_to,true,m.file_id);
             } else if(m.from===targetId&&targetType==='dm'){
-                addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id);
-                fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:m.from})});
+                // Don't render into messages panel while openDM is still loading history
+                if(openDM._loading===targetId){
+                    if(!msgBuffer[m.from]) msgBuffer[m.from]=[];
+                    msgBuffer[m.from].push(m);
+                } else {
+                    addBubble(m.from,m.text,false,'messages',m.id,m.reply_to,false,m.file_id);
+                    fetch('/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:myId,other:m.from})});
+                }
             } else {
                 if(!msgBuffer[m.from]) msgBuffer[m.from]=[];
                 msgBuffer[m.from].push(m);
@@ -1617,8 +1640,13 @@ aiFab.onmousedown=e=>{
 aiFab.addEventListener('touchstart',e=>{
     const t=e.touches[0];
     fabDrg=true; fabMoved=false;
-    fox=t.clientX-aiFab.offsetLeft;
-    foy=t.clientY-aiFab.offsetTop;
+    const rect=aiFab.getBoundingClientRect();
+    fox=t.clientX-rect.left;
+    foy=t.clientY-rect.top;
+    // Materialise CSS position into inline style so drag math works
+    aiFab.style.left=rect.left+'px';
+    aiFab.style.top=rect.top+'px';
+    aiFab.style.right='auto';
     aiFab.style.bottom='auto';
 },{passive:true});
 aiFab.addEventListener('touchmove',e=>{
@@ -1651,6 +1679,13 @@ function showSidebar(){
     // Close AI window if open
     const aiw=document.getElementById('ai-win');
     if(aiw) aiw.style.display='none';
+    // On mobile: reset fab position so it stays visible (CSS takes over)
+    if(isMobile()){
+        const fab=document.getElementById('ai-fab');
+        if(fab){
+            fab.style.left=''; fab.style.top=''; fab.style.right=''; fab.style.bottom='';
+        }
+    }
 }
 
 function showChat(){
