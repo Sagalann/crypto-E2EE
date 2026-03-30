@@ -42,102 +42,132 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,var(--orb
 @media(max-width:680px){.ai-drag-handle{display:block}}
 .back-btn{display:none;background:none;border:none;color:var(--txt);font-size:1.3em;cursor:pointer;padding:4px 6px;line-height:1;flex-shrink:0}
 
-/* ════ MOBILE — Telegram style ════ */
+/* ════ MOBILE ════ */
 @media(max-width:680px){
-    /* Orbs off on mobile — perf */
     body::before,body::after{display:none}
-
     html,body{height:100%;height:-webkit-fill-available;overflow:hidden}
 
-    .app{flex-direction:row;height:100vh;height:-webkit-fill-available}
+    /* ── Layout: nav-rail bottom, sidebar+chat fill screen ── */
+    .app{
+        flex-direction:column;
+        height:100vh;height:-webkit-fill-available;
+        position:relative;
+    }
 
-    /* Sidebar takes full screen, slides out */
+    /* Bottom nav bar — Instagram style */
+    .nav-rail{
+        position:fixed;bottom:0;left:0;right:0;
+        width:100%;
+        height:calc(54px + env(safe-area-inset-bottom));
+        padding-bottom:env(safe-area-inset-bottom);
+        flex-direction:row;justify-content:space-around;align-items:center;
+        border-right:none;
+        border-top:1px solid var(--glass-b);
+        background:var(--modal-bg);
+        backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+        z-index:300;
+        gap:0;padding-left:0;padding-right:0;padding-top:0;
+    }
+    .nav-btn{
+        flex:1;height:54px;border-radius:0;
+        font-size:22px;gap:3px;
+        padding:6px 0 4px;
+    }
+    .nav-label{font-size:10px;font-weight:500}
+    .nav-av{
+        width:32px;height:32px;border-radius:50%;
+        font-size:18px;margin-top:0;flex-shrink:0;
+    }
+    .nav-divider{display:none}
+    .nav-spacer{display:none}
+
+    /* Sidebar: full screen, slides left/right */
     .sidebar{
-        position:fixed;inset:0;z-index:100;
-        width:100%;height:100%;height:-webkit-fill-available;
+        position:fixed;
+        top:0;left:0;right:0;
+        bottom:calc(54px + env(safe-area-inset-bottom));
+        width:100%;
+        z-index:200;
         transform:translateX(0);
         transition:transform .28s cubic-bezier(.4,0,.2,1);
         border-right:none;
+        padding-bottom:0;
     }
     .sidebar.hidden{transform:translateX(-100%)}
 
-    /* Chat takes full screen */
+    /* Chat: full screen, slides in from right */
     .chat{
-        position:fixed;inset:0;z-index:99;
-        width:100%;height:100%;height:-webkit-fill-available;
+        position:fixed;
+        top:0;left:0;right:0;
+        bottom:calc(54px + env(safe-area-inset-bottom));
+        width:100%;
+        z-index:200;
         display:flex;flex-direction:column;
         transform:translateX(100%);
         transition:transform .28s cubic-bezier(.4,0,.2,1);
     }
     .chat.active{transform:translateX(0)}
 
-    /* Back button visible */
+    /* Back button */
     .back-btn{display:flex!important;align-items:center}
 
-    /* Chat header — tighter */
+    /* Chat header */
     .chat-head{padding:8px 12px;gap:8px}
     .ch-av{width:34px;height:34px;border-radius:50%;font-size:17px}
     #ch-title{font-size:.92em}
     #ch-sub{font-size:.68em}
     .e2ee-badge{font-size:.65em;padding:2px 7px}
 
-    /* Messages */
+    /* Messages — no extra bottom padding needed (chat stops above nav) */
     #messages{padding:12px 10px;gap:4px}
-    .bubble{max-width:82%;font-size:.9em;padding:8px 11px;border-radius:16px}
+    .bubble{max-width:84%;font-size:.9em;padding:8px 11px;border-radius:16px}
     .bubble.mine{border-bottom-right-radius:4px}
     .bubble.theirs{border-bottom-left-radius:4px}
 
-    /* Input bar — bigger touch targets */
+    /* Input bar */
     .inp-bar{padding:8px 10px;gap:6px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
     .inp-bar input{font-size:16px;padding:10px 12px;border-radius:22px}
     .send-btn{width:40px;height:40px;border-radius:50%;font-size:1em}
     .attach-btn{width:38px;height:38px;border-radius:50%;font-size:1.05em}
 
-    /* AI window — bottom sheet style on mobile */
-    .ai-fab{bottom:max(16px,env(safe-area-inset-bottom));right:16px;left:auto;width:46px;height:46px;border-radius:14px;font-size:20px}
-    .ai-win{
-        left:8px!important;right:8px!important;bottom:72px!important;
-        width:auto!important;top:auto!important;
-        height:50vh;max-height:420px;
-        border-radius:18px!important;
-    }
-    .ai-win .inp-bar{
-        padding:8px 10px;
-        padding-bottom:max(10px,env(safe-area-inset-bottom));
-        flex-wrap:nowrap;gap:6px;
-    }
-    .ai-win .inp-bar input{font-size:16px;min-width:0;flex:1}
-    .ai-win .help-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
-    .ai-win .attach-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
-    .ai-win .send-btn{width:36px;height:36px;flex-shrink:0}
-
-    /* Sidebar header */
-    .sb-head{padding:max(14px,env(safe-area-inset-top)) 14px 10px}
-    .my-av{width:36px;height:36px;border-radius:50%;font-size:18px}
-
-    /* User list items — taller for fat fingers */
-    .u-item{padding:11px 14px;border-radius:0;margin:0;border-bottom:1px solid var(--glass-b)}
+    /* User list items */
+    .u-item{padding:12px 14px;border-radius:0;margin:0;border-bottom:1px solid var(--glass-b)}
     .u-av{width:44px;height:44px;border-radius:50%;font-size:21px}
     .u-name{font-size:.9em}
     .u-status{font-size:.72em}
 
-    /* Modals fullscreen on mobile */
-    .prof-modal,.grp-modal{width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh;overflow-y:auto}
+    /* Modals — bottom sheet */
+    .prof-modal,.grp-modal,.ch-modal{
+        width:100%;border-radius:20px 20px 0 0;
+        position:fixed;bottom:0;left:0;right:0;
+        max-height:92vh;overflow-y:auto;
+        padding-bottom:max(16px,env(safe-area-inset-bottom));
+    }
     .overlay{align-items:flex-end}
 
-    /* Nav rail — bottom bar on mobile */
-    .nav-rail{width:100%;height:56px;flex-direction:row;border-right:none;border-top:1px solid var(--glass-b);padding:0 8px;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--sidebar);backdrop-filter:blur(20px)}
-    .nav-btn{width:52px;height:48px;border-radius:10px;font-size:18px}
-    .nav-label{font-size:8px}
-    .nav-av{width:34px;height:34px;font-size:17px;margin-top:0}
-    .nav-divider{width:1px;height:30px;margin:0 2px}
-    .nav-spacer{display:none}
-    .app{flex-direction:column}
-    .sidebar{padding-bottom:56px}
-    #messages{padding-bottom:calc(56px + 12px)}
+    /* AI fab — above bottom nav */
+    .ai-fab{
+        bottom:calc(64px + env(safe-area-inset-bottom));
+        right:16px;left:auto;
+        width:46px;height:46px;border-radius:14px;font-size:20px;
+    }
+    .ai-win{
+        left:8px!important;right:8px!important;
+        bottom:calc(118px + env(safe-area-inset-bottom))!important;
+        width:auto!important;top:auto!important;
+        height:48vh;max-height:400px;
+        border-radius:18px!important;
+    }
+    .ai-win .inp-bar{padding:8px 10px;flex-wrap:nowrap;gap:6px}
+    .ai-win .inp-bar input{font-size:16px;min-width:0;flex:1}
+    .ai-win .help-btn,.ai-win .attach-btn{width:36px;height:36px;font-size:14px;flex-shrink:0}
+    .ai-win .send-btn{width:36px;height:36px;flex-shrink:0}
 
-    /* AI drag disabled on mobile */
+    /* AI drag off */
     .ai-head{cursor:default}
+
+    /* Search bar padding */
+    .sb-search{padding:10px 12px}
 }
 
 /* SIDEBAR */
