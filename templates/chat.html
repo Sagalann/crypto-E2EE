@@ -910,11 +910,11 @@ function pickTheme(t){selTheme=t;document.getElementById('t-dark').classList.tog
 // ── Login ───────────────────────────────────────────────────
 // ── Auth persistence ────────────────────────────────────────
 const AUTH_KEY='cm_auth';
-const INACTIVE_MS=10*60*1000; // 10 minutes
+const INACTIVE_MS=30*24*60*60*1000; // 30 дней — постоянная сессия
 let lastActivityTs=Date.now();
 
-function saveAuth(uid,pw){ localStorage.setItem(AUTH_KEY,JSON.stringify({uid,pw,ts:Date.now()})); }
-function clearAuth(){ localStorage.removeItem(AUTH_KEY); }
+function saveAuth(uid,pw){ localStorage.setItem(AUTH_KEY,JSON.stringify({uid,pw,ts:Date.now()})); localStorage.setItem(AUTH_KEY+'_ts',String(Date.now())); }
+function clearAuth(){ localStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY+'_ts'); }
 
 function toggleSettingsMenu(e){
   e.stopPropagation();
@@ -947,10 +947,8 @@ async function tryAutoLogin(){
     const saved=localStorage.getItem(AUTH_KEY);
     if(!saved) return false;
     try{
-        const {uid,pw,ts}=JSON.parse(saved);
-        // Check last activity time
-        const lastAct=parseInt(localStorage.getItem(AUTH_KEY+'_ts')||ts)||ts;
-        if(Date.now()-lastAct > INACTIVE_MS){ clearAuth(); return false; }
+        const {uid,pw}=JSON.parse(saved);
+        if(!uid||!pw){ clearAuth(); return false; }
         const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({user_id:uid,password:pw})});
         const d=await r.json();
@@ -965,19 +963,9 @@ async function tryAutoLogin(){
             return true;
         }
     }catch(e){}
-    clearAuth();
+    // Сеть недоступна — не очищаем сессию, попробуем позже
     return false;
 }
-
-// Check inactivity every minute
-setInterval(()=>{
-    if(!myId) return;
-    const lastAct=parseInt(localStorage.getItem(AUTH_KEY+'_ts')||Date.now());
-    if(Date.now()-lastAct > INACTIVE_MS){
-        clearAuth(); myId='';
-        document.getElementById('login-screen').style.display='flex';
-    }
-},60000);
 
 function startPolling(){
     setInterval(pollMsgs,1000);
