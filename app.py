@@ -92,6 +92,11 @@ def touch(uid): last_seen[uid] = time.time()
 def index(): return render_template('chat.html')
 
 # ── Auth ───────────────────────────────────────────────────
+@app.get('/check_user')
+def check_user():
+    uid = request.args.get('user_id','').strip()
+    return jsonify({"exists": uid in passwords})
+
 @app.post('/login')
 def login():
     data = request.json

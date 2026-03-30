@@ -503,12 +503,29 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
   <div class="login-card">
     <span class="login-icon">🔐</span>
     <h2>Cyber Messenger</h2>
-    <p>End-to-end зашифрованный мессенджер</p>
-    <input type="text" id="login-name" placeholder="Ваш ник..." autocomplete="off">
-    <input type="password" id="login-pass" placeholder="Пароль..." autocomplete="off">
-    <button class="login-btn" onclick="doLogin()">Войти / Зарегистрироваться</button>
+    <p id="login-subtitle">E2EE мессенджер · введи свой ник</p>
+
+    <!-- Step 1: enter nickname -->
+    <div id="login-step1">
+      <input type="text" id="login-name" placeholder="Ваш ник..." autocomplete="off">
+      <button class="login-btn" id="login-next-btn" onclick="checkNick()">Продолжить →</button>
+    </div>
+
+    <!-- Step 2: enter password (shown after nick check) -->
+    <div id="login-step2" style="display:none">
+      <div id="login-nick-display" style="font-size:.85em;color:rgba(232,240,255,.6);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <span id="login-nick-badge" style="background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.3);border-radius:8px;padding:4px 10px;font-weight:600;color:#3b9eff"></span>
+        <button onclick="resetToStep1()" style="background:none;border:none;color:rgba(232,240,255,.4);cursor:pointer;font-size:.9em;padding:0">✕ сменить</button>
+      </div>
+      <input type="password" id="login-pass" placeholder="Пароль..." autocomplete="off">
+      <div id="login-confirm-wrap" style="display:none">
+        <input type="password" id="login-pass2" placeholder="Повторите пароль..." autocomplete="off" style="margin-top:0">
+      </div>
+      <button class="login-btn" id="login-submit-btn" onclick="doLogin()">Войти</button>
+    </div>
+
     <div id="login-error" style="color:#ff6464;font-size:.8em;min-height:18px;margin-top:8px"></div>
-    <div class="login-footer">🔒 Новый ник — автоматическая регистрация</div>
+    <div class="login-footer" id="login-footer">🔒 Ключи генерируются локально</div>
   </div>
 </div>
 
@@ -812,16 +829,68 @@ function startPolling(){
     refreshAll();
 }
 
+let loginIsNew=false; // true = registration, false = login
+
+async function checkNick(){
+    const uid=document.getElementById('login-name').value.trim();
+    const err=document.getElementById('login-error');
+    err.innerText='';
+    if(!uid||uid.length<2){err.innerText='Ник должен быть минимум 2 символа';return}
+    if(uid.length>24){err.innerText='Ник не более 24 символов';return}
+    const btn=document.getElementById('login-next-btn');
+    btn.disabled=true; btn.innerText='Проверяем...';
+    try{
+        const d=await fetch(`/check_user?user_id=${encodeURIComponent(uid)}`).then(r=>r.json());
+        loginIsNew=!d.exists;
+        // Show step 2
+        document.getElementById('login-step1').style.display='none';
+        document.getElementById('login-step2').style.display='block';
+        document.getElementById('login-nick-badge').innerText=uid;
+        if(loginIsNew){
+            document.getElementById('login-subtitle').innerText='Новый аккаунт — придумай пароль';
+            document.getElementById('login-confirm-wrap').style.display='block';
+            document.getElementById('login-submit-btn').innerText='Зарегистрироваться 🚀';
+            document.getElementById('login-footer').innerText='🔒 Аккаунт будет создан';
+        } else {
+            document.getElementById('login-subtitle').innerText='С возвращением! Введи пароль';
+            document.getElementById('login-confirm-wrap').style.display='none';
+            document.getElementById('login-submit-btn').innerText='Войти →';
+            document.getElementById('login-footer').innerText='🔒 E2EE · ключи локальные';
+        }
+        document.getElementById('login-pass').focus();
+    }catch(e){
+        err.innerText='Ошибка сети';
+        btn.disabled=false; btn.innerText='Продолжить →';
+    }
+}
+
+function resetToStep1(){
+    document.getElementById('login-step1').style.display='block';
+    document.getElementById('login-step2').style.display='none';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass2').value='';
+    document.getElementById('login-error').innerText='';
+    document.getElementById('login-subtitle').innerText='E2EE мессенджер · введи свой ник';
+    document.getElementById('login-next-btn').disabled=false;
+    document.getElementById('login-next-btn').innerText='Продолжить →';
+}
+
 async function doLogin(){
     const uid=document.getElementById('login-name').value.trim();
     const pw=document.getElementById('login-pass').value.trim();
     const err=document.getElementById('login-error');
     err.innerText='';
-    if(!uid||!pw){err.innerText='Введите ник и пароль';return}
+    if(!pw||pw.length<4){err.innerText='Пароль минимум 4 символа';return}
+    if(loginIsNew){
+        const pw2=document.getElementById('login-pass2').value.trim();
+        if(pw!==pw2){err.innerText='Пароли не совпадают';return}
+    }
+    const btn=document.getElementById('login-submit-btn');
+    btn.disabled=true; btn.innerText='Входим...';
     try{
         const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,password:pw})});
         const d=await r.json();
-        if(!r.ok){err.innerText=d.message||'Ошибка';return}
+        if(!r.ok){err.innerText=d.message||'Ошибка';btn.disabled=false;btn.innerText=loginIsNew?'Зарегистрироваться 🚀':'Войти →';return}
         myId=uid;
         saveAuth(uid, pw);
         touchActivity();
@@ -831,7 +900,10 @@ async function doLogin(){
         updateSidebar();
         startPolling();
         pollRequests();
-    }catch(e){err.innerText='Ошибка сети'}
+    }catch(e){
+        err.innerText='Ошибка сети';
+        btn.disabled=false;btn.innerText=loginIsNew?'Зарегистрироваться 🚀':'Войти →';
+    }
 }
 
 async function heartbeat(){
@@ -2119,9 +2191,21 @@ function showEmojiPicker(e, msgId, rbar, mine){
     });
     // Position relative to button
     const btnRect=e.target.getBoundingClientRect();
+    // Smart position — show above or below depending on space
+    const spaceAbove=btnRect.top;
+    const spaceBelow=window.innerHeight-btnRect.bottom;
+    const pickerH=260; // approximate picker height
     picker.style.position='fixed';
-    picker.style.bottom=(window.innerHeight-btnRect.top+6)+'px';
-    picker.style.left=Math.min(btnRect.left, window.innerWidth-260)+'px';
+    if(spaceAbove>pickerH || spaceAbove>spaceBelow){
+        // Show above
+        picker.style.bottom=(window.innerHeight-btnRect.top+6)+'px';
+        picker.style.top='auto';
+    } else {
+        // Show below
+        picker.style.top=(btnRect.bottom+6)+'px';
+        picker.style.bottom='auto';
+    }
+    picker.style.left=Math.min(Math.max(btnRect.left-100, 8), window.innerWidth-260)+'px';
     document.body.appendChild(picker);
     activeEmojiPicker=picker;
     // Close on outside click
@@ -2285,8 +2369,9 @@ function showChat(){
         if(dx>60&&dy<40&&sx<30&&isMobile()) showSidebar();
     },{passive:true});
 })();
-document.getElementById('login-name').onkeypress=e=>{if(e.key==='Enter')doLogin()};
+document.getElementById('login-name').onkeypress=e=>{if(e.key==='Enter')checkNick()};
 document.getElementById('login-pass').onkeypress=e=>{if(e.key==='Enter')doLogin()};
+document.getElementById('login-pass2').onkeypress=e=>{if(e.key==='Enter')doLogin()};
 // Try auto-login from saved session
 tryAutoLogin();
 </script>
