@@ -548,6 +548,14 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
       <div class="reply-bar-inner" id="reply-bar-content"><b id="reply-from"></b><span id="reply-text"></span></div>
       <button class="reply-cancel" onclick="cancelReply()">×</button>
     </div>
+    <div id="file-preview-bar" style="display:none;padding:8px 16px;background:rgba(59,158,255,.06);border-top:1px solid rgba(59,158,255,.15);align-items:center;gap:10px">
+      <div id="file-preview-thumb" style="width:38px;height:38px;border-radius:9px;background:rgba(59,158,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📄</div>
+      <div style="flex:1;min-width:0">
+        <div id="file-preview-name" style="font-size:.82em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="file-preview-size" style="font-size:.7em;color:var(--txt2);margin-top:1px"></div>
+      </div>
+      <button onclick="cancelFile()" style="background:none;border:none;color:var(--txt2);font-size:1.3em;cursor:pointer;padding:0 4px;line-height:1;transition:.2s" onmouseover="this.style.color='#ff6464'" onmouseout="this.style.color='var(--txt2)'">×</button>
+    </div>
     <div class="inp-bar">
       <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикрепить файл">📎</button>
       <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)">
@@ -583,6 +591,11 @@ code{background:rgba(59,158,255,.12);border:1px solid rgba(59,158,255,.2);border
     <div class="ai-x" onclick="toggleAI()">×</div>
   </div>
   <div id="ai-msgs"></div>
+  <div id="ai-file-preview-bar" style="display:none;padding:6px 12px;background:rgba(108,99,255,.08);border-top:1px solid rgba(108,99,255,.2);align-items:center;gap:8px">
+    <div id="ai-file-preview-thumb" style="width:30px;height:30px;border-radius:7px;background:rgba(108,99,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📄</div>
+    <div id="ai-file-preview-name" style="flex:1;font-size:.79em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt2)"></div>
+    <button onclick="cancelAIFile()" style="background:none;border:none;color:var(--txt2);font-size:1.2em;cursor:pointer;padding:0">×</button>
+  </div>
   <div class="inp-bar">
     <button class="help-btn" onclick="sendCmd('/help')" style="flex-shrink:0">❓</button>
     <button class="attach-btn" onclick="document.getElementById('ai-file-input').click()" title="Прикрепить файл" style="flex-shrink:0">📎</button>
@@ -609,6 +622,7 @@ let groupLastTs={}; // {gid: ts}
 let currentTab='dm';
 let grpMembers=[];
 let pendingRequests=[];
+let pendingFile=null; // {file, file_id, name, mime} — file selected but not yet sent
 
 const EMOJIS=['🙂','😎','🤖','👾','🦊','🐱','🐸','🦁','🐼','🦋','🌙','⚡','🔥','💎','🛸','🎭','🧠','👻','🦄','🌊','🎯','🚀','💫','🎪'];
 
@@ -981,16 +995,21 @@ function cancelReply(){replyTo=null;document.getElementById('reply-bar').style.d
 // ── Send ─────────────────────────────────────────────────────
 async function sendMsg(){
     const inp=document.getElementById('msg-in');
-    if(!inp.value.trim()&&!replyTo||!targetId) return;
     const text=inp.value.trim();
+    const hasFile=pendingFile&&pendingFile.file_id;
+    // Need at least text OR file OR reply
+    if(!text&&!hasFile&&!replyTo) return;
+    if(!targetId) return;
     inp.value='';
     const reply=replyTo;
+    const fileId=hasFile?pendingFile.file_id:null;
     cancelReply();
+    cancelFile();
 
     const optimisticId='opt_'+Date.now();
-    addBubble(myId,text,true,'messages',optimisticId,reply,false,null);
+    addBubble(myId,text,true,'messages',optimisticId,reply,false,fileId);
 
-    const body={from:myId,message:text,reply_to:reply};
+    const body={from:myId,message:text,reply_to:reply,file_id:fileId};
     if(targetType==='dm'){
         body.to=targetId;
         const r=await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -998,45 +1017,61 @@ async function sendMsg(){
         const el=document.querySelector(`[data-msg-id="${optimisticId}"]`);
         if(el&&d.msg_id){el.dataset.msgId=d.msg_id;const b=el.querySelector('.bubble');if(b)b.dataset.msgId=d.msg_id;}
     } else if(targetType==='group'){
-        await fetch(`/group/${targetId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text,reply_to:reply})});
+        await fetch(`/group/${targetId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text,reply_to:reply,file_id:fileId})});
     } else if(targetType==='channel'){
-        await fetch(`/channel/${targetId}/post`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text})});
-        // Poll immediately to show new post
+        await fetch(`/channel/${targetId}/post`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,message:text,file_id:fileId})});
         setTimeout(pollChannelPosts,300);
     }
 }
 
 async function sendToAI(){
     const inp=document.getElementById('ai-in');
-    if(!inp.value) return;
-    addBubble(myId,inp.value,true,'ai-msgs',null,null,true,null);
-    await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,to:'Crypto_Assistor',message:inp.value})});
+    const text=inp.value.trim();
+    const hasFile=pendingAIFile&&pendingAIFile.file_id;
+    if(!text&&!hasFile) return;
     inp.value='';
+    const fileId=hasFile?pendingAIFile.file_id:null;
+    cancelAIFile();
+    const displayText=text+(hasFile&&!text?'📎 '+pendingAIFile?.name:'');
+    addBubble(myId,text,true,'ai-msgs',null,null,true,fileId);
+    await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({from:myId,to:'Crypto_Assistor',message:text||'[file]',file_id:fileId})});
 }
 
 // ── Files ────────────────────────────────────────────────────
 async function handleFileSelect(e){
-    const file=e.target.files[0];if(!file||!targetId) return;
-    const fd=new FormData();fd.append('file',file);fd.append('user_id',myId);
-    const optimisticId='opt_'+Date.now();
-    addBubble(myId,'',true,'messages',optimisticId,replyTo,false,null);
-    const reply=replyTo; cancelReply();
+    const file=e.target.files[0]; if(!file) return;
+    e.target.value='';
+    // Upload immediately, show preview, wait for send button
+    const fd=new FormData(); fd.append('file',file); fd.append('user_id',myId);
+    const bar=document.getElementById('file-preview-bar');
+    const thumb=document.getElementById('file-preview-thumb');
+    const nameEl=document.getElementById('file-preview-name');
+    const sizeEl=document.getElementById('file-preview-size');
+    nameEl.innerText=file.name;
+    sizeEl.innerText='Загрузка...';
+    thumb.innerText=file.type.startsWith('image/')?'🖼️':file.type.startsWith('video/')?'🎬':file.name.endsWith('.pdf')?'📑':'📄';
+    bar.style.display='flex';
+    pendingFile={file, file_id:null, name:file.name, mime:file.type};
     try{
         const r=await fetch('/upload',{method:'POST',body:fd});
         const d=await r.json();
         if(d.file_id){
-            const body={from:myId,file_id:d.file_id,message:'',reply_to:reply};
-            if(targetType==='dm'){body.to=targetId;await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
-            else{await fetch(`/group/${targetId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:myId,file_id:d.file_id,message:'',reply_to:reply})})}
-        }
-    }catch(ex){console.error(ex)}
-    e.target.value='';
-    // Перегружаем историю
-    if(targetType==='dm'){
-        const hist=await fetch(`/chat_history?user_id=${myId}&other=${targetId}`).then(r=>r.json());
-        document.getElementById('messages').innerHTML='';
-        hist.forEach(m=>addBubble(m.from,m.text,m.from===myId,'messages',m.id,m.reply_to,m.read,m.file_id));
-    }
+            pendingFile.file_id=d.file_id;
+            const bytes=file.size;
+            sizeEl.innerText=bytes>1048576?(bytes/1048576).toFixed(1)+' MB':bytes>1024?(bytes/1024).toFixed(0)+' KB':bytes+' B';
+            if(file.type.startsWith('image/')){
+                const url=URL.createObjectURL(file);
+                thumb.innerHTML=`<img src="${url}" style="width:38px;height:38px;object-fit:cover;border-radius:9px">`;
+            }
+        } else { cancelFile(); }
+    }catch(ex){ cancelFile(); console.error(ex); }
+}
+
+function cancelFile(){
+    pendingFile=null;
+    document.getElementById('file-preview-bar').style.display='none';
+    document.getElementById('file-preview-thumb').innerText='📄';
 }
 
 async function loadFileInfo(fileId,fb){
@@ -1119,20 +1154,32 @@ async function createGroup(){
 
 // ── AI ────────────────────────────────────────────────────────
 function toggleAI(){const w=document.getElementById('ai-win');w.style.display=w.style.display==='flex'?'none':'flex';if(w.style.display==='flex')w.style.animation='slideUp .25s ease'}
+let pendingAIFile=null;
+
 async function handleAIFileSelect(e){
     const file=e.target.files[0]; if(!file) return;
+    e.target.value='';
     const fd=new FormData(); fd.append('file',file); fd.append('user_id',myId);
-    const optimisticId='opt_ai_'+Date.now();
-    addBubble(myId,'📎 '+file.name,true,'ai-msgs',optimisticId,null,true,null);
+    const bar=document.getElementById('ai-file-preview-bar');
+    const thumb=document.getElementById('ai-file-preview-thumb');
+    const nameEl=document.getElementById('ai-file-preview-name');
+    nameEl.innerText=file.name+' — загрузка...';
+    thumb.innerText=file.type.startsWith('image/')?'🖼️':file.name.endsWith('.pdf')?'📑':'📄';
+    bar.style.display='flex';
+    pendingAIFile={file_id:null,name:file.name};
     try{
         const r=await fetch('/upload',{method:'POST',body:fd});
         const d=await r.json();
         if(d.file_id){
-            await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({from:myId,to:'Crypto_Assistor',message:'[file]',file_id:d.file_id})});
-        }
-    }catch(ex){console.error(ex)}
-    e.target.value='';
+            pendingAIFile.file_id=d.file_id;
+            nameEl.innerText=file.name;
+        } else { cancelAIFile(); }
+    }catch(ex){ cancelAIFile(); }
+}
+
+function cancelAIFile(){
+    pendingAIFile=null;
+    document.getElementById('ai-file-preview-bar').style.display='none';
 }
 
 // ── Chat Requests ──────────────────────────────────────────
@@ -1185,48 +1232,92 @@ async function respondToRequest(reqId, action){
 async function pollRequests(){
     if(!myId) return;
     try{
-        const reqs=await fetch(`/requests/incoming?user_id=${myId}`).then(r=>r.json());
-        pendingRequests = reqs || [];
-        // Update badge
+        const count=await fetch(`/notifications/count?user_id=${myId}`).then(r=>r.json());
         const badge=document.getElementById('notif-badge');
-        if(pendingRequests.length>0){
-            badge.style.display='flex';
-            badge.innerText=pendingRequests.length;
-        } else {
-            badge.style.display='none';
-        }
-        // If notif tab is open — refresh it
-        if(currentTab==='notif') renderNotifications();
+        if(count.count>0){badge.style.display='flex';badge.innerText=count.count;}
+        else badge.style.display='none';
+        if(currentTab==='notif') await renderNotifications();
     }catch(e){}
 }
 
-function renderNotifications(){
+async function renderNotifications(){
     const list=document.getElementById('notif-list');
-    list.innerHTML='';
-    if(!pendingRequests.length){
-        list.innerHTML='<div class="notif-empty"><div class="notif-empty-icon">🔔</div><div>Нет уведомлений</div></div>';
-        return;
-    }
-    pendingRequests.forEach(r=>{
-        const ts=new Date(r.ts*1000);
-        const timeStr=ts.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
-        const item=document.createElement('div');
-        item.className='notif-item req';
-        item.innerHTML=`
-            <div class="notif-item-top">
-                <div class="notif-av">${r.avatar}</div>
-                <div class="notif-info">
-                    <div class="notif-name">${r.display_name}</div>
-                    <div class="notif-text">хочет написать вам</div>
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt2);font-size:.83em">Загрузка...</div>';
+    try{
+        const notifs=await fetch(`/notifications?user_id=${myId}`).then(r=>r.json());
+        list.innerHTML='';
+        // Header with clear button
+        if(notifs.length){
+            const hdr=document.createElement('div');
+            hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 14px 4px;';
+            hdr.innerHTML=`<span style="font-size:.75em;color:var(--txt2);font-weight:600;letter-spacing:.3px">УВЕДОМЛЕНИЯ</span>
+                <button onclick="clearAllNotifs()" style="background:none;border:none;color:var(--txt2);font-size:.75em;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.15s" onmouseover="this.style.color='#ff6464'" onmouseout="this.style.color='var(--txt2)'">Очистить все</button>`;
+            list.appendChild(hdr);
+        }
+        if(!notifs.length){
+            list.innerHTML='<div class="notif-empty"><div class="notif-empty-icon">🔔</div><div>Нет уведомлений</div></div>';
+            return;
+        }
+        notifs.forEach(n=>{
+            const ts=new Date(n.ts*1000);
+            const timeStr=ts.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+            const dateStr=ts.toLocaleDateString('ru',{day:'numeric',month:'short'});
+            const m=n.meta||{};
+            const item=document.createElement('div');
+            item.className='notif-item'+(n.type==='chat_request'?' req':'');
+            item.dataset.nid=n.id;
+
+            let icon='🔔', actionBtns='', clickFn='';
+            if(n.type==='chat_request'){
+                icon=m.avatar||'🙂';
+                actionBtns=`<div class="notif-btns">
+                    <button class="notif-accept" onclick="respondToRequestFromNotif('${m.request_id||n.id}','accept','${n.id}')">✓ Принять</button>
+                    <button class="notif-reject" onclick="respondToRequestFromNotif('${m.request_id||n.id}','reject','${n.id}')">✗ Отклонить</button>
+                </div>`;
+            } else if(n.type==='channel_sub'){
+                icon=m.avatar||'📢';
+            } else if(n.type==='request_accepted'){
+                icon=m.avatar||'✅';
+                clickFn=`onclick="openDMFromNotif('${m.from}')"`;
+            }
+
+            item.innerHTML=`
+                <div class="notif-item-top" ${clickFn} style="${clickFn?'cursor:pointer':''}">
+                    <div class="notif-av">${icon}</div>
+                    <div class="notif-info">
+                        <div class="notif-name">${n.text}</div>
+                        <div class="notif-time" style="font-size:.7em;color:var(--txt2);margin-top:2px">${dateStr} · ${timeStr}</div>
+                    </div>
+                    <button onclick="deleteNotif('${n.id}',this)" style="background:none;border:none;color:var(--txt2);font-size:1em;cursor:pointer;padding:0 2px;flex-shrink:0;opacity:.5;transition:.2s" onmouseover="this.style.opacity=1;this.style.color='#ff6464'" onmouseout="this.style.opacity=.5;this.style.color='var(--txt2)'">×</button>
                 </div>
-                <div class="notif-time">${timeStr}</div>
-            </div>
-            <div class="notif-btns">
-                <button class="notif-accept" onclick="respondToRequest('${r.id}','accept')">✓ Принять</button>
-                <button class="notif-reject" onclick="respondToRequest('${r.id}','reject')">✗ Отклонить</button>
-            </div>`;
-        list.appendChild(item);
-    });
+                ${actionBtns}`;
+            list.appendChild(item);
+        });
+        // Update badge to 0 (we've read them)
+        document.getElementById('notif-badge').style.display='none';
+    }catch(e){ list.innerHTML='<div class="notif-empty"><div class="notif-empty-icon">⚠️</div><div>Ошибка загрузки</div></div>'; }
+}
+
+async function clearAllNotifs(){
+    await fetch(`/notifications?user_id=${myId}`,{method:'DELETE'});
+    renderNotifications();
+}
+
+async function deleteNotif(nid, btn){
+    await fetch(`/notifications/${nid}?user_id=${myId}`,{method:'DELETE'});
+    const item=btn.closest('.notif-item');
+    if(item){item.style.opacity='0';item.style.transform='translateX(30px)';item.style.transition='.2s';setTimeout(()=>item.remove(),200);}
+}
+
+async function respondToRequestFromNotif(reqId, action, nid){
+    await respondToRequest(reqId, action);
+    await deleteNotif(nid, document.querySelector(`[data-nid="${nid}"] button`));
+}
+
+async function openDMFromNotif(uid){
+    const p=allProfiles[uid]||{};
+    switchTab('dm');
+    await openDM(uid, p.avatar||'🙂', p.display_name||uid);
 }
 
 // ── Channels ───────────────────────────────────────────────

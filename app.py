@@ -66,6 +66,7 @@ groups      = {}   # { gid: {name, avatar, members, created_by} }
 group_msgs  = {}   # { gid: [{id, from, text, ts, reply_to, file_id}] }
 files_store = {}   # { fid: {name, mime, data, uploaded_by, ts} }
 chat_requests  = {} # { to_uid: [{id, from, ts, status}] }
+notifications  = {} # { uid: [{id, type, text, meta, ts, read}] }  — all notifications
 channels       = {} # { cid: {name, avatar, about, owner, subscribers, ts} }
 channel_posts  = {} # { cid: [{id, from, text, ts, file_id}] }
 push_tokens    = {} # { uid: [subscription_info] }  — Web Push
@@ -77,6 +78,13 @@ profiles[BOT_ID] = {"display_name":"Crypto Assistant","avatar":"🤖","status":"
 last_seen[BOT_ID] = time.time()
 
 def chat_key(a, b): return ':'.join(sorted([a, b]))
+
+def push_notif(uid, ntype, text, meta=None):
+    """Push a notification to user's notification list."""
+    notifications.setdefault(uid, []).append({
+        "id": str(uuid.uuid4()), "type": ntype,
+        "text": text, "meta": meta or {}, "ts": time.time(), "read": False
+    })
 def is_online(uid): return uid in last_seen and (time.time()-last_seen[uid]) < 15
 def touch(uid): last_seen[uid] = time.time()
 
@@ -304,6 +312,9 @@ def send_request():
     chat_requests.setdefault(to, []).append({
         "id": req_id, "from": sender, "ts": time.time(), "status": "pending"
     })
+    p = profiles.get(sender, {})
+    push_notif(to, "chat_request", f"{p.get('display_name', sender)} хочет написать вам",
+               {"from": sender, "avatar": p.get("avatar","🙂"), "request_id": req_id})
     return jsonify({"status":"sent","request_id":req_id})
 
 @app.post('/request/respond')
@@ -317,6 +328,11 @@ def respond_request():
     for r in chat_requests.get(uid, []):
         if r['id'] == req_id:
             r['status'] = 'accepted' if action == 'accept' else 'rejected'
+            p = profiles.get(uid, {})
+            if action == 'accept':
+                push_notif(r['from'], "request_accepted",
+                           f"{p.get('display_name', uid)} принял ваш запрос",
+                           {"from": uid, "avatar": p.get("avatar","🙂")})
             return jsonify({"status":"ok","action":r['status']})
     return jsonify({"error":"not found"}), 404
 
@@ -416,6 +432,10 @@ def channel_subscribe(cid):
     touch(uid)
     if uid not in ch['subscribers']:
         ch['subscribers'].append(uid)
+        p = profiles.get(uid, {})
+        push_notif(ch['owner'], "channel_sub",
+                   f"{p.get('display_name', uid)} подписался на канал «{ch['name']}»",
+                   {"from": uid, "avatar": p.get("avatar","🙂"), "channel_id": cid, "channel_name": ch['name']})
     return jsonify({"status":"ok"})
 
 @app.post('/channel/<cid>/unsubscribe')
@@ -455,6 +475,37 @@ def channel_info(cid):
     })
 
 # ── Push Notifications ──────────────────────────────────────
+
+@app.get('/notifications')
+def get_notifications():
+    uid = request.args.get('user_id','')
+    if uid not in user_keys: return jsonify([])
+    touch(uid)
+    notifs = notifications.get(uid, [])
+    # Mark all as read
+    for n in notifs: n['read'] = True
+    return jsonify(sorted(notifs, key=lambda x: x['ts'], reverse=True))
+
+@app.delete('/notifications')
+def clear_notifications():
+    uid = request.args.get('user_id','')
+    if uid not in user_keys: return jsonify({"error":"unauthorized"}), 401
+    notifications[uid] = []
+    return jsonify({"status":"ok"})
+
+@app.delete('/notifications/<notif_id>')
+def delete_notification(notif_id):
+    uid = request.args.get('user_id','')
+    if uid not in user_keys: return jsonify({"error":"unauthorized"}), 401
+    notifications[uid] = [n for n in notifications.get(uid,[]) if n['id'] != notif_id]
+    return jsonify({"status":"ok"})
+
+@app.get('/notifications/count')
+def notif_count():
+    uid = request.args.get('user_id','')
+    if uid not in user_keys: return jsonify({"count":0})
+    unread = sum(1 for n in notifications.get(uid,[]) if not n['read'])
+    return jsonify({"count": unread})
 
 @app.post('/push/subscribe')
 def push_subscribe():
